@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RJ Pets</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { gray: { 750: '#2d3748' } } } }
+    };
+  </script>
+  <style>
+    * { scrollbar-width: thin; scrollbar-color: #4a5568 #1a202c; }
+    body { margin: 0; background: #111827; }
+    @media (max-width: 768px) {
+      .grid-cols-7 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// Supabase Config
+const SUPABASE_URL = "https://moxjbswcfwtamivwkdlr.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1veGpic3djZnd0YW1pdndrZGxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjY0MzUsImV4cCI6MjA5MTg0MjQzNX0.fEaXWdO8AH7jxlhC24DmGofdXeS0TkDOC5kHPi6jY48";
+
+const supabase = {
+  async getAll(table, { order = "id", limit = 2000, offset = 0, search } = {}) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    url.searchParams.set("order", `${order}.asc`);
+    url.searchParams.set("limit", limit);
+    url.searchParams.set("offset", offset);
+    if (search) url.searchParams.set("or",
+      `(owner_name.ilike.%${search}%,pet_name.ilike.%${search}%,phone_primary.ilike.%${search}%,breed.ilike.%${search}%)`);
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Prefer: "count=exact" },
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const count = res.headers.get("content-range")?.split("/")[1];
+    return { data: await res.json(), count: count ? parseInt(count) : null };
+  },
+  async update(table, id, data) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    url.searchParams.set("id", `eq.${id}`);
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return { data: await res.json() };
+  },
+  async insert(table, data) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return { data: await res.json() };
+  },
+  async delete(table, id) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    url.searchParams.set("id", `eq.${id}`);
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (!res.ok) throw new Error(await res.text());
+  },
+};
+
+// Demo Data (fallback)
+const DEMO = [
+  { id:1, owner_name:"Caprilla Misty", pet_name:"Shiloh", breed:"doxie",
+    address:"5350 W Bresse Rd Lima, Oh 45806", phone_primary:"4192361740",
+    phone_secondary:"4192368817", email:"mcaprilla@woh.rr.com",
+    emergency_contact:"419-236-1740", vet:"midwest",
+    date_in:"2022-06-13", date_out:"2022-06-14", time_in:"AM", time_out:"PM+1",
+    num_days:2, price_per_day:18, total:36, balance:36,
+    last_service_date:"2026-03-11", dhpp_date:"2015-02-25",
+    bordetella_exp:"2027-04-04", rabies_exp:null, felv_date:null,
+    feeding_instructions:"", food_brand:"", medication_notes:"",
+    notes:"", down_payment:null, percent_off:null, date_of_birth:null,
+    num_pets:null, note_date:null },
+];
+
+// Helpers
+const fmtPhone = (p) => {
+  if (!p) return "";
+  const d = p.replace(/\D/g,"");
+  return d.length===10 ? `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}` : p;
+};
+const fmtDate = (d) => {
+  if (!d) return "";
+  const dt = new Date(d+"T00:00:00");
+  return `${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;
+};
+const isExpired = (d) => d ? new Date(d) < new Date() : false;
+const isSoon = (d) => {
+  if (!d) return false;
+  const dt = new Date(d), now = new Date();
+  return dt > now && dt - now < 30*86400000;
+};
+
+// Editable Field
+const F = ({ label, value, field, editing, onChange, type="text", w="auto", big=false }) => {
+  const display = type==="date" ? fmtDate(value) :
+                  type==="phone" ? fmtPhone(value) :
+                  type==="money" ? (value!=null ? `$${Number(value).toFixed(0)}` : "") :
+                  (value ?? "");
+  if (!editing) return (
+    <div className="flex flex-col" style={{minWidth:w}}>
+      {label && <span className="text-xs text-gray-400 leading-none">{label}</span>}
+      <span className={`${big?"text-2xl font-bold":"text-sm"} text-gray-100 truncate`}>
+        {display || <span className="text-gray-600">&mdash;</span>}
+      </span>
+    </div>
+  );
+  return (
+    <div className="flex flex-col" style={{minWidth:w}}>
+      {label && <span className="text-xs text-gray-400 leading-none">{label}</span>}
+      <input type={type==="date"?"date":type==="number"||type==="money"?"number":"text"}
+        value={type==="money"?(value??""):(value??"")}
+        onChange={e => onChange(field, type==="number"||type==="money"?(e.target.value?Number(e.target.value):null):e.target.value||null)}
+        className={`${big?"text-lg font-semibold":"text-sm"} bg-gray-700 border border-gray-500 rounded px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-400`}
+        style={{width:w}} />
+    </div>
+  );
+};
+
+// Vaccine Status Pill
+const Vax = ({ label, date, editing, field, onChange }) => {
+  const exp = isExpired(date);
+  const soon = isSoon(date);
+  const bg = exp ? "bg-red-600" : soon ? "bg-yellow-500" : date ? "bg-green-600" : "bg-gray-600";
+  const text = exp ? "EXPIRED" : soon ? "EXPIRING" : date ? "CURRENT" : "NONE";
+  return (
+    <div className="flex items-center gap-3 py-1.5">
+      <span className="text-xs font-semibold text-gray-300 w-16 uppercase">{label}</span>
+      <span className={`${bg} text-white text-xs px-2 py-0.5 rounded-full font-medium w-20 text-center`}>{text}</span>
+      {editing ? (
+        <input type="date" value={date??""} onChange={e=>onChange(field,e.target.value||null)}
+          className="text-xs bg-gray-700 border border-gray-500 rounded px-2 py-0.5 text-white" />
+      ) : (
+        <span className="text-sm text-gray-300">{fmtDate(date)}</span>
+      )}
+    </div>
+  );
+};
+
+// Main App
+function RJPetsApp() {
+  const [records, setRecords] = useState([]);
+  const [idx, setIdx] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState({});
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [connected, setConnected] = useState(false);
+  const [tab, setTab] = useState("pet");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const r = editing ? editData : (records[idx] || null);
+
+  const showToast = (msg, type="success") => {
+    setToast({msg,type});
+    setTimeout(()=>setToast(null), 2500);
+  };
+
+  const fetchRecords = useCallback(async (search="") => {
+    setLoading(true);
+    try {
+      const {data,count} = await supabase.getAll("clients",{search:search||undefined});
+      setRecords(data); setTotal(count||data.length); setIdx(0); setConnected(true);
+    } catch {
+      setRecords(DEMO); setTotal(DEMO.length); setIdx(0); setConnected(false);
+    }
+    setLoading(false);
+  },[]);
+
+  useEffect(()=>{fetchRecords()},[fetchRecords]);
+
+  const go = (i) => { if(i>=0&&i<records.length){setIdx(i);setEditing(false);setEditData({});}};
+  const startEdit = () => { setEditing(true); setEditData({...records[idx]}); };
+  const onChange = (f,v) => setEditData(p=>({...p,[f]:v}));
+  const cancelEdit = () => { setEditing(false); setEditData({}); };
+
+  const saveRecord = async () => {
+    setSaving(true);
+    try {
+      const {id,created_at,updated_at,...rest} = editData;
+      if (connected) await supabase.update("clients",id,rest);
+      setRecords(p=>p.map(x=>x.id===id?{...x,...rest}:x));
+      setEditing(false); setEditData({}); showToast("Record saved!");
+    } catch(e) { showToast("Save failed: "+e.message,"error"); }
+    setSaving(false);
+  };
+
+  const newRecord = async () => {
+    const blank = { owner_name:"New Owner", pet_name:"New Pet", breed:"", address:"",
+      phone_primary:"", phone_secondary:"", email:"", emergency_contact:"",
+      vet:"", date_in:null, date_out:null, time_in:"AM", time_out:"PM+1",
+      num_days:null, price_per_day:null, total:null, balance:null,
+      last_service_date:null, dhpp_date:null, bordetella_exp:null,
+      rabies_exp:null, felv_date:null, feeding_instructions:"",
+      food_brand:"", medication_notes:"", notes:"", down_payment:null,
+      percent_off:null, date_of_birth:null, num_pets:null, note_date:null };
+    try {
+      if (connected) {
+        const {data} = await supabase.insert("clients",blank);
+        setRecords(p=>[...p,data[0]]); setIdx(records.length); setTotal(t=>t+1);
+      } else {
+        const fakeId = Math.max(0,...records.map(r=>r.id))+1;
+        setRecords(p=>[...p,{id:fakeId,...blank}]); setIdx(records.length); setTotal(t=>t+1);
+      }
+      startEdit();
+    } catch(e) { showToast("Create failed: "+e.message,"error"); }
+  };
+
+  const deleteRecord = async () => {
+    if (!r) return;
+    try {
+      if (connected) await supabase.delete("clients",r.id);
+      const newRecs = records.filter(x=>x.id!==r.id);
+      setRecords(newRecs); setTotal(t=>t-1);
+      setIdx(Math.min(idx,newRecs.length-1));
+      setConfirmDelete(false); setEditing(false);
+      showToast("Record deleted");
+    } catch(e) { showToast("Delete failed: "+e.message,"error"); }
+  };
+
+  const handleSearch = async () => { await fetchRecords(query); };
+  const clearSearch = async () => { setQuery(""); await fetchRecords(""); };
+
+  useEffect(()=>{
+    const h = (e) => {
+      if(editing) return;
+      if(e.key==="ArrowLeft"){e.preventDefault();go(idx-1);}
+      if(e.key==="ArrowRight"){e.preventDefault();go(idx+1);}
+    };
+    window.addEventListener("keydown",h);
+    return ()=>window.removeEventListener("keydown",h);
+  });
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen bg-gray-900">
+      <div className="text-center">
+        <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"/>
+        <p className="text-gray-400">Loading RJ Pets...</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+      {/* Toolbar */}
+      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-black tracking-wider text-blue-400">RJ PETS</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${connected?"bg-green-700 text-green-200":"bg-yellow-700 text-yellow-200"}`}>
+            {connected?"LIVE":"DEMO"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={()=>go(0)} className="px-2 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&#x23EE;</button>
+          <button onClick={()=>go(idx-1)} className="px-3 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&larr;</button>
+          <span className="text-sm font-mono text-gray-400 mx-2 min-w-[80px] text-center">
+            {records.length>0?`${idx+1} of ${records.length}`:"0 of 0"}
+          </span>
+          <button onClick={()=>go(idx+1)} className="px-3 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&rarr;</button>
+          <button onClick={()=>go(records.length-1)} className="px-2 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&#x23ED;</button>
+          <span className="text-xs text-gray-500 ml-2">{total.toLocaleString()} records</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {!editing ? (
+            <>
+              <button onClick={newRecord} className="px-3 py-1.5 bg-green-700 rounded hover:bg-green-600 text-sm font-medium">+ New</button>
+              <button onClick={startEdit} disabled={!r} className="px-3 py-1.5 bg-blue-700 rounded hover:bg-blue-600 text-sm font-medium disabled:opacity-30">Edit</button>
+            </>
+          ) : (
+            <>
+              <button onClick={saveRecord} disabled={saving} className="px-3 py-1.5 bg-green-700 rounded hover:bg-green-600 text-sm font-medium">
+                {saving?"Saving...":"Save"}
+              </button>
+              <button onClick={cancelEdit} className="px-3 py-1.5 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
+              <button onClick={()=>setConfirmDelete(true)} className="px-3 py-1.5 bg-red-800 rounded hover:bg-red-700 text-sm">Delete</button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="bg-gray-800 px-4 py-2 flex items-center gap-2 border-b border-gray-700">
+        <span className="text-xs text-gray-500 font-semibold uppercase">Quick Find</span>
+        <input value={query} onChange={e=>setQuery(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&handleSearch()}
+          placeholder="Search owner, pet, phone, breed..."
+          className="flex-1 px-3 py-1.5 rounded bg-gray-700 text-white placeholder-gray-500 text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <button onClick={handleSearch} className="px-4 py-1.5 bg-blue-700 rounded hover:bg-blue-600 text-sm font-medium">Find</button>
+        {query && <button onClick={clearSearch} className="px-3 py-1.5 bg-gray-700 rounded hover:bg-gray-600 text-sm">Show All</button>}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`text-center py-2 text-sm font-medium ${toast.type==="error"?"bg-red-900 text-red-200":"bg-green-900 text-green-200"}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Delete Confirm */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm mx-4 border border-gray-600">
+            <h3 className="text-lg font-bold mb-2">Delete Record?</h3>
+            <p className="text-gray-400 mb-4 text-sm">
+              Permanently delete <strong>{r?.owner_name}</strong> / <strong>{r?.pet_name}</strong>? This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={()=>setConfirmDelete(false)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
+              <button onClick={deleteRecord} className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-600 text-sm font-medium">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!r ? (
+        <div className="flex items-center justify-center py-20 text-gray-500">
+          No records. {query?"Try a different search.":"Click '+ New' to add one."}
+        </div>
+      ) : (
+        <div className="max-w-5xl mx-auto mt-4 px-4 pb-8 space-y-3">
+
+          {/* OWNER SECTION */}
+          <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div className="flex-1 min-w-[300px]">
+                <div className="flex items-baseline gap-3 mb-3">
+                  <span className="text-xs text-gray-500 uppercase font-semibold">Owner</span>
+                  <F value={r.owner_name} field="owner_name" editing={editing} onChange={onChange} big w="300px"/>
+                </div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                  <F label="Phone" value={r.phone_primary} field="phone_primary" editing={editing} onChange={onChange} type="phone" w="180px"/>
+                  <F label="Email" value={r.email} field="email" editing={editing} onChange={onChange} w="260px"/>
+                  <F label="Phone 2" value={r.phone_secondary} field="phone_secondary" editing={editing} onChange={onChange} type="phone" w="180px"/>
+                  <F label="Emergency" value={r.emergency_contact} field="emergency_contact" editing={editing} onChange={onChange} w="260px"/>
+                </div>
+              </div>
+              <div className="text-right max-w-xs">
+                <F label="Address" value={r.address} field="address" editing={editing} onChange={onChange} w="280px"/>
+              </div>
+            </div>
+          </div>
+
+          {/* SERVICE / BOOKING */}
+          <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+            <div className="grid grid-cols-7 gap-3 items-end">
+              <F label="Date In" value={r.date_in} field="date_in" editing={editing} onChange={onChange} type="date"/>
+              <F label="Time" value={r.time_in} field="time_in" editing={editing} onChange={onChange}/>
+              <F label="# Days" value={r.num_days} field="num_days" editing={editing} onChange={onChange} type="number"/>
+              <F label="Price" value={r.price_per_day} field="price_per_day" editing={editing} onChange={onChange} type="number"/>
+              <F label="Total" value={r.total} field="total" editing={editing} onChange={onChange} type="number"/>
+              <F label="% Off" value={r.percent_off} field="percent_off" editing={editing} onChange={onChange} type="number"/>
+              <F label="Balance" value={r.balance} field="balance" editing={editing} onChange={onChange} type="money" big/>
+            </div>
+            <div className="grid grid-cols-7 gap-3 items-end mt-3">
+              <F label="Date Out" value={r.date_out} field="date_out" editing={editing} onChange={onChange} type="date"/>
+              <F label="Time Out" value={r.time_out} field="time_out" editing={editing} onChange={onChange}/>
+              <div/>
+              <F label="Down" value={r.down_payment} field="down_payment" editing={editing} onChange={onChange} type="number"/>
+              <div className="col-span-2">
+                <F label="Last Service" value={r.last_service_date} field="last_service_date" editing={editing} onChange={onChange} type="date"/>
+              </div>
+              <div/>
+            </div>
+          </div>
+
+          {/* PET TABS */}
+          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="flex border-b border-gray-700">
+              {[
+                {id:"pet",label:"Pet Info"},
+                {id:"feed",label:"Feeding"},
+                {id:"vax",label:"Vaccines"},
+                {id:"notes",label:"Notes"},
+              ].map(t=>(
+                <button key={t.id} onClick={()=>setTab(t.id)}
+                  className={`px-5 py-2.5 text-sm font-medium transition-all ${
+                    tab===t.id
+                      ? "bg-gray-900 text-blue-400 border-b-2 border-blue-500"
+                      : "text-gray-500 hover:text-gray-300 hover:bg-gray-750"}`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="p-5">
+              {/* Pet Info Tab */}
+              {tab==="pet" && (
+                <div>
+                  <div className="flex items-baseline gap-4 mb-4">
+                    <span className="text-xs text-gray-500 uppercase font-semibold">Pet</span>
+                    <F value={r.pet_name} field="pet_name" editing={editing} onChange={onChange} big w="250px"/>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6 mb-4">
+                    <F label="Breed" value={r.breed} field="breed" editing={editing} onChange={onChange} w="180px"/>
+                    <F label="VET" value={r.vet} field="vet" editing={editing} onChange={onChange} w="180px"/>
+                    <F label="Date of Birth" value={r.date_of_birth} field="date_of_birth" editing={editing} onChange={onChange} type="date" w="160px"/>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6">
+                    <F label="# of Pets" value={r.num_pets} field="num_pets" editing={editing} onChange={onChange} type="number" w="80px"/>
+                    <div className="col-span-2">
+                      <F label="Medications" value={r.medication_notes} field="medication_notes" editing={editing} onChange={onChange} w="100%"/>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Feeding Tab */}
+              {tab==="feed" && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-400">Feeding for <strong className="text-gray-200">{r.pet_name}</strong></p>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <span className="text-xs text-gray-500 block mb-1">Food Brand</span>
+                      {editing ? (
+                        <input value={r.food_brand??""} onChange={e=>onChange("food_brand",e.target.value||null)}
+                          className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
+                      ) : (
+                        <p className="text-sm">{r.food_brand||<span className="text-gray-600">&mdash;</span>}</p>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 block mb-1">Feeding Instructions</span>
+                      {editing ? (
+                        <textarea value={r.feeding_instructions??""} onChange={e=>onChange("feeding_instructions",e.target.value||null)}
+                          rows={3} className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{r.feeding_instructions||<span className="text-gray-600">&mdash;</span>}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vaccines Tab */}
+              {tab==="vax" && (
+                <div>
+                  <p className="text-sm text-gray-400 mb-3">Vaccinations for <strong className="text-gray-200">{r.pet_name}</strong></p>
+                  <div className="space-y-1">
+                    <Vax label="DHPP" date={r.dhpp_date} editing={editing} field="dhpp_date" onChange={onChange}/>
+                    <Vax label="Bord" date={r.bordetella_exp} editing={editing} field="bordetella_exp" onChange={onChange}/>
+                    <Vax label="Rabies" date={r.rabies_exp} editing={editing} field="rabies_exp" onChange={onChange}/>
+                    <Vax label="FeLV" date={r.felv_date} editing={editing} field="felv_date" onChange={onChange}/>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes Tab */}
+              {tab==="notes" && (
+                <div>
+                  <span className="text-xs text-gray-500 block mb-1">Notes</span>
+                  {editing ? (
+                    <textarea value={r.notes??""} onChange={e=>onChange("notes",e.target.value||null)}
+                      rows={8} className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap min-h-[150px]">{r.notes||<span className="text-gray-600">No notes</span>}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-gray-600 mt-2">
+            Use &larr; &rarr; arrow keys to navigate records
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<RJPetsApp/>);
+  </script>
+</body>
+</html>
