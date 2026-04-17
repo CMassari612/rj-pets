@@ -20,6 +20,16 @@
     @media (max-width: 768px) {
       .grid-cols-7 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
     }
+    @media print {
+      body { background: white !important; margin: 0; }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      .cage-card { page-break-inside: avoid; border: 2px solid #000 !important; background: white !important; color: black !important; }
+      .cage-card * { color: black !important; }
+      .cage-card table { border-collapse: collapse; width: 100%; }
+      .cage-card td, .cage-card th { border: 1px solid #333; padding: 4px 8px; font-size: 12px; }
+      .cage-card th { background: #eee !important; font-weight: bold; text-align: left; }
+    }
   </style>
 </head>
 <body>
@@ -32,11 +42,12 @@ const SUPABASE_URL = "https://moxjbswcfwtamivwkdlr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1veGpic3djZnd0YW1pdndrZGxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjY0MzUsImV4cCI6MjA5MTg0MjQzNX0.fEaXWdO8AH7jxlhC24DmGofdXeS0TkDOC5kHPi6jY48";
 
 const supabase = {
-  async _fetchPage(table, { order, from, to, search }) {
+  async _fetchPage(table, { order, from, to, search, filters }) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
     url.searchParams.set("order", `${order}.asc`);
     if (search) url.searchParams.set("or",
-      `(owner_name.ilike.%${search}%,pet_name.ilike.%${search}%,phone_primary.ilike.%${search}%,breed.ilike.%${search}%)`);
+      `(owner_name.ilike.%${search}%,phone_primary.ilike.%${search}%)`);
+    if (filters) Object.entries(filters).forEach(([k,v]) => url.searchParams.set(k, v));
     const res = await fetch(url, {
       headers: {
         apikey: SUPABASE_ANON_KEY,
@@ -51,19 +62,29 @@ const supabase = {
     const count = cr.split("/")[1];
     return { data: await res.json(), count: count && count !== "*" ? parseInt(count) : null };
   },
-  async getAll(table, { order = "id", search, pageSize = 1000 } = {}) {
-    const first = await this._fetchPage(table, { order, from: 0, to: pageSize - 1, search });
+  async getAll(table, { order = "id", search, pageSize = 1000, filters } = {}) {
+    const first = await this._fetchPage(table, { order, from: 0, to: pageSize - 1, search, filters });
     const total = first.count ?? first.data.length;
     let data = first.data;
     if (total > pageSize) {
       const pages = [];
       for (let from = pageSize; from < total; from += pageSize) {
-        pages.push(this._fetchPage(table, { order, from, to: from + pageSize - 1, search }));
+        pages.push(this._fetchPage(table, { order, from, to: from + pageSize - 1, search, filters }));
       }
       const rest = await Promise.all(pages);
       data = data.concat(...rest.map(r => r.data));
     }
     return { data, count: total };
+  },
+  async getByFilter(table, filters, order = "id") {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    url.searchParams.set("order", `${order}.asc`);
+    Object.entries(filters).forEach(([k,v]) => url.searchParams.set(k, v));
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return { data: await res.json() };
   },
   async update(table, id, data) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
@@ -99,21 +120,6 @@ const supabase = {
   },
 };
 
-// Demo Data (fallback)
-const DEMO = [
-  { id:1, owner_name:"Caprilla Misty", pet_name:"Shiloh", breed:"doxie",
-    address:"5350 W Bresse Rd Lima, Oh 45806", phone_primary:"4192361740",
-    phone_secondary:"4192368817", email:"mcaprilla@woh.rr.com",
-    emergency_contact:"419-236-1740", vet:"midwest",
-    date_in:"2022-06-13", date_out:"2022-06-14", time_in:"AM", time_out:"PM+1",
-    num_days:2, price_per_day:18, total:36, balance:36,
-    last_service_date:"2026-03-11", dhpp_date:"2015-02-25",
-    bordetella_exp:"2027-04-04", rabies_exp:null, felv_date:null,
-    feeding_instructions:"", food_brand:"", medication_notes:"",
-    notes:"", down_payment:null, percent_off:null, date_of_birth:null,
-    num_pets:null, note_date:null },
-];
-
 // Helpers
 const fmtPhone = (p) => {
   if (!p) return "";
@@ -132,11 +138,27 @@ const isSoon = (d) => {
   return dt > now && dt - now < 30*86400000;
 };
 
+// Calculate days between two dates. PM pickup adds 1 extra day.
+const calcDays = (dateIn, dateOut, timeOut) => {
+  if (!dateIn || !dateOut) return null;
+  const d1 = new Date(dateIn+"T00:00:00");
+  const d2 = new Date(dateOut+"T00:00:00");
+  let days = Math.round((d2 - d1) / 86400000);
+  if (days < 0) days = 0;
+  if (timeOut === "PM") days += 1;
+  return days || 1; // minimum 1 day
+};
+
+// Dropdown options
+const PRICE_OPTIONS = [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 35, 40, 45, 50];
+const PERCENT_OFF_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 50];
+const TIME_OPTIONS = ["AM", "PM"];
+
 // Editable Field
 const F = ({ label, value, field, editing, onChange, type="text", w="auto", big=false }) => {
   const display = type==="date" ? fmtDate(value) :
                   type==="phone" ? fmtPhone(value) :
-                  type==="money" ? (value!=null ? `$${Number(value).toFixed(0)}` : "") :
+                  type==="money" ? (value!=null ? `$${Number(value).toFixed(2)}` : "") :
                   (value ?? "");
   if (!editing) return (
     <div className="flex flex-col" style={{minWidth:w}}>
@@ -150,10 +172,33 @@ const F = ({ label, value, field, editing, onChange, type="text", w="auto", big=
     <div className="flex flex-col" style={{minWidth:w}}>
       {label && <span className="text-xs text-gray-400 leading-none">{label}</span>}
       <input type={type==="date"?"date":type==="number"||type==="money"?"number":"text"}
+        step={type==="money"?"0.01":undefined}
         value={type==="money"?(value??""):(value??"")}
         onChange={e => onChange(field, type==="number"||type==="money"?(e.target.value?Number(e.target.value):null):e.target.value||null)}
         className={`${big?"text-lg font-semibold":"text-sm"} bg-gray-700 border border-gray-500 rounded px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-400`}
         style={{width:w}} />
+    </div>
+  );
+};
+
+// Dropdown Field
+const Dropdown = ({ label, value, field, editing, onChange, options, w="auto", suffix="" }) => {
+  if (!editing) return (
+    <div className="flex flex-col" style={{minWidth:w}}>
+      {label && <span className="text-xs text-gray-400 leading-none">{label}</span>}
+      <span className="text-sm text-gray-100">{value != null ? `${value}${suffix}` : <span className="text-gray-600">&mdash;</span>}</span>
+    </div>
+  );
+  return (
+    <div className="flex flex-col" style={{minWidth:w}}>
+      {label && <span className="text-xs text-gray-400 leading-none">{label}</span>}
+      <select value={value??""}
+        onChange={e => onChange(field, e.target.value === "" ? null : (typeof options[0]==="number" ? Number(e.target.value) : e.target.value))}
+        className="text-sm bg-gray-700 border border-gray-500 rounded px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+        style={{width:w}}>
+        <option value="">--</option>
+        {options.map(o => <option key={o} value={o}>{o}{suffix}</option>)}
+      </select>
     </div>
   );
 };
@@ -178,6 +223,138 @@ const Vax = ({ label, date, editing, field, onChange }) => {
   );
 };
 
+// ====== CAGE CARD (Printable) ======
+function CageCard({ client, pet, onClose }) {
+  const print = () => { window.print(); };
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center z-50 overflow-auto py-8 no-print" style={{zIndex:9999}}>
+      <div style={{maxWidth:700, width:"100%"}} className="mx-4">
+        <div className="flex justify-between items-center mb-3 no-print">
+          <h2 className="text-white text-lg font-bold">Cage Card Preview</h2>
+          <div className="flex gap-2">
+            <button onClick={print} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 text-sm font-medium">
+              Print Cage Card
+            </button>
+            <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 text-sm">Close</button>
+          </div>
+        </div>
+        <div className="cage-card bg-white text-black rounded p-6 print-only" style={{display:"block"}}>
+          <div style={{textAlign:"center", borderBottom:"2px solid #000", paddingBottom:8, marginBottom:12}}>
+            <h1 style={{margin:0, fontSize:22, fontWeight:"bold"}}>RJ PETS - CAGE CARD</h1>
+          </div>
+          <table style={{width:"100%", borderCollapse:"collapse", marginBottom:12}}>
+            <tbody>
+              <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", width:"25%"}}>Owner</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{client.owner_name}</td>
+              </tr>
+              <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Phone</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{fmtPhone(client.phone_primary)}</td>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Emergency</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{client.emergency_contact}</td>
+              </tr>
+              <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Date In</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{fmtDate(client.date_in)} {client.time_in || ""}</td>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Date Out</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{fmtDate(client.date_out)} {client.time_out || ""}</td>
+              </tr>
+              <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}># Days</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{client.num_days}</td>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Price/Day</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.price_per_day || 0}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style={{border:"2px solid #000", padding:12, marginBottom:12}}>
+            <h2 style={{margin:"0 0 8px", fontSize:16, borderBottom:"1px solid #666", paddingBottom:4}}>
+              {pet.pet_name || "Pet"} &mdash; {pet.breed || ""}
+            </h2>
+            <table style={{width:"100%", borderCollapse:"collapse"}}>
+              <tbody>
+                <tr>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", width:"25%"}}>VET</th>
+                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.vet}</td>
+                </tr>
+                <tr>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Food</th>
+                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.food_brand}</td>
+                </tr>
+                <tr>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Feeding</th>
+                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.feeding_instructions}</td>
+                </tr>
+                <tr>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Medications</th>
+                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.medication_notes}</td>
+                </tr>
+                <tr>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Notes</th>
+                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.notes}</td>
+                </tr>
+              </tbody>
+            </table>
+            <table style={{width:"100%", borderCollapse:"collapse", marginTop:8}}>
+              <thead>
+                <tr>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>DHPP</th>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>Bordetella</th>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>Rabies</th>
+                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>FeLV</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.dhpp_date)}</td>
+                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.bordetella_exp)}</td>
+                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.rabies_exp)}</td>
+                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.felv_date)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <table style={{width:"100%", borderCollapse:"collapse"}}>
+            <tbody>
+              <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>% Off</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{client.percent_off || 0}%</td>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Cash Disc.</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.cash_discount || 0}</td>
+              </tr>
+              <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>DC/Extra</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.daycare_extra || 0}</td>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Down Pmt</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.down_payment || 0}</td>
+              </tr>
+              <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Total</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px", fontWeight:"bold"}}>${client.total || 0}</td>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Balance</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px", fontWeight:"bold"}}>${client.balance || 0}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style={{marginTop:16, borderTop:"1px solid #999", paddingTop:8}}>
+            <div style={{display:"flex", justifyContent:"space-between"}}>
+              <div><strong>AM Meds:</strong> _______________</div>
+              <div><strong>PM Meds:</strong> _______________</div>
+            </div>
+            <div style={{marginTop:8}}>
+              <strong>Allergies:</strong> _______________________________________________
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main App
 function RJPetsApp() {
   const [records, setRecords] = useState([]);
@@ -190,58 +367,144 @@ function RJPetsApp() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [connected, setConnected] = useState(false);
-  const [tab, setTab] = useState("pet");
+  const [tab, setTab] = useState("info");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Pets state
+  const [pets, setPets] = useState([]);
+  const [petIdx, setPetIdx] = useState(0);
+  const [editingPet, setEditingPet] = useState(false);
+  const [editPetData, setEditPetData] = useState({});
+  const [savingPet, setSavingPet] = useState(false);
+  const [showCageCard, setShowCageCard] = useState(false);
+
   const r = editing ? editData : (records[idx] || null);
+  const currentPet = editingPet ? editPetData : (pets[petIdx] || null);
 
   const showToast = (msg, type="success") => {
     setToast({msg,type});
     setTimeout(()=>setToast(null), 2500);
   };
 
+  // Fetch clients
   const fetchRecords = useCallback(async (search="") => {
     setLoading(true);
     try {
       const {data,count} = await supabase.getAll("clients",{search:search||undefined});
       setRecords(data); setTotal(count||data.length); setIdx(0); setConnected(true);
     } catch {
-      setRecords(DEMO); setTotal(DEMO.length); setIdx(0); setConnected(false);
+      setRecords([]); setTotal(0); setIdx(0); setConnected(false);
     }
     setLoading(false);
   },[]);
 
+  // Fetch pets for current client
+  const fetchPets = useCallback(async (clientId) => {
+    if (!clientId || !connected) { setPets([]); setPetIdx(0); return; }
+    try {
+      const {data} = await supabase.getByFilter("pets", { client_id: `eq.${clientId}` });
+      setPets(data || []);
+      setPetIdx(0);
+    } catch {
+      setPets([]);
+      setPetIdx(0);
+    }
+  }, [connected]);
+
   useEffect(()=>{fetchRecords()},[fetchRecords]);
 
-  const go = (i) => { if(i>=0&&i<records.length){setIdx(i);setEditing(false);setEditData({});}};
+  // When record changes, fetch pets
+  useEffect(()=>{
+    const client = records[idx];
+    if (client) fetchPets(client.id);
+    else { setPets([]); setPetIdx(0); }
+    setEditingPet(false); setEditPetData({});
+  },[idx, records, fetchPets]);
+
+  const go = (i) => { if(i>=0&&i<records.length){setIdx(i);setEditing(false);setEditData({});setEditingPet(false);setEditPetData({});}};
+
+  // Client editing
   const startEdit = () => { setEditing(true); setEditData({...records[idx]}); };
-  const onChange = (f,v) => setEditData(p=>({...p,[f]:v}));
+  const onClientChange = (f,v) => {
+    setEditData(p => {
+      const next = {...p, [f]: v};
+      // Auto-calc days when dates or time_out change
+      if (f === "date_in" || f === "date_out" || f === "time_out") {
+        const dIn = f === "date_in" ? v : next.date_in;
+        const dOut = f === "date_out" ? v : next.date_out;
+        const tOut = f === "time_out" ? v : next.time_out;
+        next.num_days = calcDays(dIn, dOut, tOut);
+      }
+      return next;
+    });
+  };
   const cancelEdit = () => { setEditing(false); setEditData({}); };
 
-  const saveRecord = async () => {
+  const saveClient = async () => {
     setSaving(true);
     try {
       const {id,created_at,updated_at,...rest} = editData;
       if (connected) await supabase.update("clients",id,rest);
       setRecords(p=>p.map(x=>x.id===id?{...x,...rest}:x));
-      setEditing(false); setEditData({}); showToast("Record saved!");
+      setEditing(false); setEditData({}); showToast("Client saved!");
     } catch(e) { showToast("Save failed: "+e.message,"error"); }
     setSaving(false);
   };
 
+  // Pet editing
+  const startPetEdit = () => { setEditingPet(true); setEditPetData({...pets[petIdx]}); };
+  const onPetChange = (f,v) => setEditPetData(p=>({...p,[f]:v}));
+  const cancelPetEdit = () => { setEditingPet(false); setEditPetData({}); };
+
+  const savePet = async () => {
+    setSavingPet(true);
+    try {
+      const {id,created_at,updated_at,client_id,...rest} = editPetData;
+      if (connected) await supabase.update("pets",id,rest);
+      setPets(p=>p.map(x=>x.id===id?{...x,...rest}:x));
+      setEditingPet(false); setEditPetData({}); showToast("Pet saved!");
+    } catch(e) { showToast("Pet save failed: "+e.message,"error"); }
+    setSavingPet(false);
+  };
+
+  // Add new pet to current client
+  const addPet = async () => {
+    const client = records[idx];
+    if (!client) return;
+    const blank = {
+      client_id: client.id, pet_name: "New Pet", breed: "", date_of_birth: null,
+      vet: "", dhpp_date: null, bordetella_exp: null, rabies_exp: null, felv_date: null,
+      medication_notes: "", feeding_instructions: "", food_brand: "", notes: "", note_date: null
+    };
+    try {
+      if (connected) {
+        const {data} = await supabase.insert("pets", blank);
+        setPets(p => [...p, data[0]]);
+        setPetIdx(pets.length);
+      }
+      setEditingPet(true); setEditPetData(connected ? {} : {...blank, id: Date.now()});
+    } catch(e) { showToast("Add pet failed: "+e.message,"error"); }
+  };
+
+  // New client
   const newRecord = async () => {
-    const blank = { owner_name:"New Owner", pet_name:"New Pet", breed:"", address:"",
-      phone_primary:"", phone_secondary:"", email:"", emergency_contact:"",
-      vet:"", date_in:null, date_out:null, time_in:"AM", time_out:"PM+1",
+    const blank = { owner_name:"New Owner", address:"", phone_primary:"", phone_secondary:"",
+      email:"", emergency_contact:"", vet:"",
+      date_in:null, date_out:null, time_in:"AM", time_out:"AM",
       num_days:null, price_per_day:null, total:null, balance:null,
-      last_service_date:null, dhpp_date:null, bordetella_exp:null,
-      rabies_exp:null, felv_date:null, feeding_instructions:"",
-      food_brand:"", medication_notes:"", notes:"", down_payment:null,
-      percent_off:null, date_of_birth:null, num_pets:null, note_date:null };
+      last_service_date:null, down_payment:null, percent_off:null,
+      cash_discount:0, daycare_extra:0,
+      date_of_birth:null, num_pets:null, note_date:null,
+      // Legacy pet fields kept for compatibility
+      pet_name:"", breed:"", dhpp_date:null, bordetella_exp:null, rabies_exp:null,
+      felv_date:null, feeding_instructions:"", food_brand:"", medication_notes:"", notes:"" };
     try {
       if (connected) {
         const {data} = await supabase.insert("clients",blank);
-        setRecords(p=>[...p,data[0]]); setIdx(records.length); setTotal(t=>t+1);
+        const newClient = data[0];
+        setRecords(p=>[...p,newClient]); setIdx(records.length); setTotal(t=>t+1);
+        // Also create a default pet
+        await supabase.insert("pets", { client_id: newClient.id, pet_name: "New Pet" });
       } else {
         const fakeId = Math.max(0,...records.map(r=>r.id))+1;
         setRecords(p=>[...p,{id:fakeId,...blank}]); setIdx(records.length); setTotal(t=>t+1);
@@ -250,6 +513,7 @@ function RJPetsApp() {
     } catch(e) { showToast("Create failed: "+e.message,"error"); }
   };
 
+  // Delete client
   const deleteRecord = async () => {
     if (!r) return;
     try {
@@ -267,7 +531,7 @@ function RJPetsApp() {
 
   useEffect(()=>{
     const h = (e) => {
-      if(editing) return;
+      if(editing||editingPet) return;
       if(e.key==="ArrowLeft"){e.preventDefault();go(idx-1);}
       if(e.key==="ArrowRight"){e.preventDefault();go(idx+1);}
     };
@@ -286,8 +550,13 @@ function RJPetsApp() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
+      {/* Cage Card Modal */}
+      {showCageCard && currentPet && r && (
+        <CageCard client={r} pet={currentPet} onClose={()=>setShowCageCard(false)} />
+      )}
+
       {/* Toolbar */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between flex-wrap gap-2 no-print">
         <div className="flex items-center gap-3">
           <span className="text-xl font-black tracking-wider text-blue-400">RJ PETS</span>
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${connected?"bg-green-700 text-green-200":"bg-yellow-700 text-yellow-200"}`}>
@@ -309,11 +578,15 @@ function RJPetsApp() {
             <>
               <button onClick={newRecord} className="px-3 py-1.5 bg-green-700 rounded hover:bg-green-600 text-sm font-medium">+ New</button>
               <button onClick={startEdit} disabled={!r} className="px-3 py-1.5 bg-blue-700 rounded hover:bg-blue-600 text-sm font-medium disabled:opacity-30">Edit</button>
+              <button onClick={()=>setShowCageCard(true)} disabled={!currentPet}
+                className="px-3 py-1.5 bg-purple-700 rounded hover:bg-purple-600 text-sm font-medium disabled:opacity-30">
+                🖨 Cage Card
+              </button>
             </>
           ) : (
             <>
-              <button onClick={saveRecord} disabled={saving} className="px-3 py-1.5 bg-green-700 rounded hover:bg-green-600 text-sm font-medium">
-                {saving?"Saving...":"Save"}
+              <button onClick={saveClient} disabled={saving} className="px-3 py-1.5 bg-green-700 rounded hover:bg-green-600 text-sm font-medium">
+                {saving?"Saving...":"Save Client"}
               </button>
               <button onClick={cancelEdit} className="px-3 py-1.5 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
               <button onClick={()=>setConfirmDelete(true)} className="px-3 py-1.5 bg-red-800 rounded hover:bg-red-700 text-sm">Delete</button>
@@ -323,11 +596,11 @@ function RJPetsApp() {
       </div>
 
       {/* Search */}
-      <div className="bg-gray-800 px-4 py-2 flex items-center gap-2 border-b border-gray-700">
+      <div className="bg-gray-800 px-4 py-2 flex items-center gap-2 border-b border-gray-700 no-print">
         <span className="text-xs text-gray-500 font-semibold uppercase">Quick Find</span>
         <input value={query} onChange={e=>setQuery(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&handleSearch()}
-          placeholder="Search owner, pet, phone, breed..."
+          placeholder="Search owner, phone..."
           className="flex-1 px-3 py-1.5 rounded bg-gray-700 text-white placeholder-gray-500 text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button onClick={handleSearch} className="px-4 py-1.5 bg-blue-700 rounded hover:bg-blue-600 text-sm font-medium">Find</button>
         {query && <button onClick={clearSearch} className="px-3 py-1.5 bg-gray-700 rounded hover:bg-gray-600 text-sm">Show All</button>}
@@ -335,7 +608,7 @@ function RJPetsApp() {
 
       {/* Toast */}
       {toast && (
-        <div className={`text-center py-2 text-sm font-medium ${toast.type==="error"?"bg-red-900 text-red-200":"bg-green-900 text-green-200"}`}>
+        <div className={`text-center py-2 text-sm font-medium no-print ${toast.type==="error"?"bg-red-900 text-red-200":"bg-green-900 text-green-200"}`}>
           {toast.msg}
         </div>
       )}
@@ -346,7 +619,7 @@ function RJPetsApp() {
           <div className="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm mx-4 border border-gray-600">
             <h3 className="text-lg font-bold mb-2">Delete Record?</h3>
             <p className="text-gray-400 mb-4 text-sm">
-              Permanently delete <strong>{r?.owner_name}</strong> / <strong>{r?.pet_name}</strong>? This cannot be undone.
+              Permanently delete <strong>{r?.owner_name}</strong> and all their pets? This cannot be undone.
             </p>
             <div className="flex gap-2 justify-end">
               <button onClick={()=>setConfirmDelete(false)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
@@ -357,11 +630,11 @@ function RJPetsApp() {
       )}
 
       {!r ? (
-        <div className="flex items-center justify-center py-20 text-gray-500">
+        <div className="flex items-center justify-center py-20 text-gray-500 no-print">
           No records. {query?"Try a different search.":"Click '+ New' to add one."}
         </div>
       ) : (
-        <div className="max-w-5xl mx-auto mt-4 px-4 pb-8 space-y-3">
+        <div className="max-w-5xl mx-auto mt-4 px-4 pb-8 space-y-3 no-print">
 
           {/* OWNER SECTION */}
           <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
@@ -369,137 +642,193 @@ function RJPetsApp() {
               <div className="flex-1 min-w-[300px]">
                 <div className="flex items-baseline gap-3 mb-3">
                   <span className="text-xs text-gray-500 uppercase font-semibold">Owner</span>
-                  <F value={r.owner_name} field="owner_name" editing={editing} onChange={onChange} big w="300px"/>
+                  <F value={r.owner_name} field="owner_name" editing={editing} onChange={onClientChange} big w="300px"/>
                 </div>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                  <F label="Phone" value={r.phone_primary} field="phone_primary" editing={editing} onChange={onChange} type="phone" w="180px"/>
-                  <F label="Email" value={r.email} field="email" editing={editing} onChange={onChange} w="260px"/>
-                  <F label="Phone 2" value={r.phone_secondary} field="phone_secondary" editing={editing} onChange={onChange} type="phone" w="180px"/>
-                  <F label="Emergency" value={r.emergency_contact} field="emergency_contact" editing={editing} onChange={onChange} w="260px"/>
+                  <F label="Phone" value={r.phone_primary} field="phone_primary" editing={editing} onChange={onClientChange} type="phone" w="180px"/>
+                  <F label="Email" value={r.email} field="email" editing={editing} onChange={onClientChange} w="260px"/>
+                  <F label="Phone 2" value={r.phone_secondary} field="phone_secondary" editing={editing} onChange={onClientChange} type="phone" w="180px"/>
+                  <F label="Emergency" value={r.emergency_contact} field="emergency_contact" editing={editing} onChange={onClientChange} w="260px"/>
                 </div>
               </div>
               <div className="text-right max-w-xs">
-                <F label="Address" value={r.address} field="address" editing={editing} onChange={onChange} w="280px"/>
+                <F label="Address" value={r.address} field="address" editing={editing} onChange={onClientChange} w="280px"/>
               </div>
             </div>
           </div>
 
           {/* SERVICE / BOOKING */}
           <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
-            <div className="grid grid-cols-7 gap-3 items-end">
-              <F label="Date In" value={r.date_in} field="date_in" editing={editing} onChange={onChange} type="date"/>
-              <F label="Time" value={r.time_in} field="time_in" editing={editing} onChange={onChange}/>
-              <F label="# Days" value={r.num_days} field="num_days" editing={editing} onChange={onChange} type="number"/>
-              <F label="Price" value={r.price_per_day} field="price_per_day" editing={editing} onChange={onChange} type="number"/>
-              <F label="Total" value={r.total} field="total" editing={editing} onChange={onChange} type="number"/>
-              <F label="% Off" value={r.percent_off} field="percent_off" editing={editing} onChange={onChange} type="number"/>
-              <F label="Balance" value={r.balance} field="balance" editing={editing} onChange={onChange} type="money" big/>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs text-gray-500 uppercase font-semibold">Booking</span>
+              <F label="Last Service" value={r.last_service_date} field="last_service_date" editing={editing} onChange={onClientChange} type="date"/>
+            </div>
+            <div className="grid grid-cols-4 gap-4 items-end">
+              <F label="Date In" value={r.date_in} field="date_in" editing={editing} onChange={onClientChange} type="date"/>
+              <Dropdown label="Time In" value={r.time_in} field="time_in" editing={editing} onChange={onClientChange} options={TIME_OPTIONS}/>
+              <F label="Date Out" value={r.date_out} field="date_out" editing={editing} onChange={onClientChange} type="date"/>
+              <Dropdown label="Time Out" value={r.time_out} field="time_out" editing={editing} onChange={onClientChange} options={TIME_OPTIONS}/>
             </div>
             <div className="grid grid-cols-7 gap-3 items-end mt-3">
-              <F label="Date Out" value={r.date_out} field="date_out" editing={editing} onChange={onChange} type="date"/>
-              <F label="Time Out" value={r.time_out} field="time_out" editing={editing} onChange={onChange}/>
-              <div/>
-              <F label="Down" value={r.down_payment} field="down_payment" editing={editing} onChange={onChange} type="number"/>
-              <div className="col-span-2">
-                <F label="Last Service" value={r.last_service_date} field="last_service_date" editing={editing} onChange={onChange} type="date"/>
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400 leading-none"># Days</span>
+                <span className="text-lg font-bold text-blue-300">{r.num_days ?? "--"}</span>
               </div>
-              <div/>
+              <Dropdown label="Price/Day" value={r.price_per_day} field="price_per_day" editing={editing} onChange={onClientChange}
+                options={PRICE_OPTIONS} suffix="" w="90px"/>
+              <Dropdown label="% Off" value={r.percent_off} field="percent_off" editing={editing} onChange={onClientChange}
+                options={PERCENT_OFF_OPTIONS} suffix="%" w="80px"/>
+              <F label="Cash Disc." value={r.cash_discount} field="cash_discount" editing={editing} onChange={onClientChange} type="money" w="90px"/>
+              <F label="DC/Extra" value={r.daycare_extra} field="daycare_extra" editing={editing} onChange={onClientChange} type="money" w="90px"/>
+              <F label="Down Pmt" value={r.down_payment} field="down_payment" editing={editing} onChange={onClientChange} type="money" w="90px"/>
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400 leading-none">Balance</span>
+                <span className="text-xl font-bold text-green-400">
+                  {r.balance != null ? `$${Number(r.balance).toFixed(2)}` : <span className="text-yellow-500 text-sm">TBD</span>}
+                </span>
+              </div>
             </div>
+            {editing && (
+              <p className="text-xs text-yellow-500 mt-2 italic">
+                Balance formula not yet implemented — awaiting confirmation. Enter balance manually for now.
+              </p>
+            )}
           </div>
 
-          {/* PET TABS */}
+          {/* PET TABS — Pet 1, Pet 2, etc. */}
           <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-            <div className="flex border-b border-gray-700">
-              {[
-                {id:"pet",label:"Pet Info"},
-                {id:"feed",label:"Feeding"},
-                {id:"vax",label:"Vaccines"},
-                {id:"notes",label:"Notes"},
-              ].map(t=>(
-                <button key={t.id} onClick={()=>setTab(t.id)}
-                  className={`px-5 py-2.5 text-sm font-medium transition-all ${
-                    tab===t.id
+            <div className="flex border-b border-gray-700 items-center">
+              {pets.map((p, i) => (
+                <button key={p.id} onClick={() => { setPetIdx(i); setEditingPet(false); setEditPetData({}); }}
+                  className={`px-4 py-2.5 text-sm font-medium transition-all ${
+                    petIdx===i
                       ? "bg-gray-900 text-blue-400 border-b-2 border-blue-500"
                       : "text-gray-500 hover:text-gray-300 hover:bg-gray-750"}`}>
-                  {t.label}
+                  Pet {i+1}: {p.pet_name || "?"}
                 </button>
               ))}
+              {pets.length < 5 && !editing && (
+                <button onClick={addPet} className="px-3 py-2.5 text-sm text-green-400 hover:text-green-300 hover:bg-gray-750 font-medium">
+                  + Add Pet
+                </button>
+              )}
             </div>
-            <div className="p-5">
-              {/* Pet Info Tab */}
-              {tab==="pet" && (
-                <div>
-                  <div className="flex items-baseline gap-4 mb-4">
-                    <span className="text-xs text-gray-500 uppercase font-semibold">Pet</span>
-                    <F value={r.pet_name} field="pet_name" editing={editing} onChange={onChange} big w="250px"/>
-                  </div>
-                  <div className="grid grid-cols-3 gap-6 mb-4">
-                    <F label="Breed" value={r.breed} field="breed" editing={editing} onChange={onChange} w="180px"/>
-                    <F label="VET" value={r.vet} field="vet" editing={editing} onChange={onChange} w="180px"/>
-                    <F label="Date of Birth" value={r.date_of_birth} field="date_of_birth" editing={editing} onChange={onChange} type="date" w="160px"/>
-                  </div>
-                  <div className="grid grid-cols-3 gap-6">
-                    <F label="# of Pets" value={r.num_pets} field="num_pets" editing={editing} onChange={onChange} type="number" w="80px"/>
-                    <div className="col-span-2">
-                      <F label="Medications" value={r.medication_notes} field="medication_notes" editing={editing} onChange={onChange} w="100%"/>
-                    </div>
+
+            {currentPet ? (
+              <div className="p-5">
+                {/* Pet action bar */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    {!editingPet ? (
+                      <button onClick={startPetEdit} className="px-3 py-1 bg-blue-700 rounded hover:bg-blue-600 text-xs font-medium">Edit Pet</button>
+                    ) : (
+                      <>
+                        <button onClick={savePet} disabled={savingPet} className="px-3 py-1 bg-green-700 rounded hover:bg-green-600 text-xs font-medium">
+                          {savingPet?"Saving...":"Save Pet"}
+                        </button>
+                        <button onClick={cancelPetEdit} className="px-3 py-1 bg-gray-600 rounded hover:bg-gray-500 text-xs">Cancel</button>
+                      </>
+                    )}
                   </div>
                 </div>
-              )}
 
-              {/* Feeding Tab */}
-              {tab==="feed" && (
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-400">Feeding for <strong className="text-gray-200">{r.pet_name}</strong></p>
-                  <div className="grid grid-cols-2 gap-6">
+                {/* Tab nav inside pet */}
+                <div className="flex gap-1 mb-4">
+                  {[
+                    {id:"info",label:"Info"},
+                    {id:"feed",label:"Feeding"},
+                    {id:"vax",label:"Vaccines"},
+                    {id:"notes",label:"Notes"},
+                  ].map(t=>(
+                    <button key={t.id} onClick={()=>setTab(t.id)}
+                      className={`px-3 py-1.5 text-xs rounded font-medium transition-all ${
+                        tab===t.id
+                          ? "bg-blue-900 text-blue-300 border border-blue-600"
+                          : "bg-gray-700 text-gray-400 hover:text-gray-200"}`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Pet Info */}
+                {tab==="info" && (
+                  <div>
+                    <div className="flex items-baseline gap-4 mb-4">
+                      <span className="text-xs text-gray-500 uppercase font-semibold">Pet Name</span>
+                      <F value={currentPet.pet_name} field="pet_name" editing={editingPet} onChange={onPetChange} big w="250px"/>
+                    </div>
+                    <div className="grid grid-cols-3 gap-6">
+                      <F label="Breed" value={currentPet.breed} field="breed" editing={editingPet} onChange={onPetChange} w="180px"/>
+                      <F label="VET" value={currentPet.vet} field="vet" editing={editingPet} onChange={onPetChange} w="180px"/>
+                      <F label="Date of Birth" value={currentPet.date_of_birth} field="date_of_birth" editing={editingPet} onChange={onPetChange} type="date" w="160px"/>
+                    </div>
+                    <div className="mt-4">
+                      <span className="text-xs text-gray-500 block mb-1">Medications</span>
+                      {editingPet ? (
+                        <textarea value={currentPet.medication_notes??""} onChange={e=>onPetChange("medication_notes",e.target.value||null)}
+                          rows={3} className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{currentPet.medication_notes || <span className="text-gray-600">&mdash;</span>}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Feeding */}
+                {tab==="feed" && (
+                  <div className="space-y-4">
                     <div>
                       <span className="text-xs text-gray-500 block mb-1">Food Brand</span>
-                      {editing ? (
-                        <input value={r.food_brand??""} onChange={e=>onChange("food_brand",e.target.value||null)}
+                      {editingPet ? (
+                        <input value={currentPet.food_brand??""} onChange={e=>onPetChange("food_brand",e.target.value||null)}
                           className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
                       ) : (
-                        <p className="text-sm">{r.food_brand||<span className="text-gray-600">&mdash;</span>}</p>
+                        <p className="text-sm">{currentPet.food_brand || <span className="text-gray-600">&mdash;</span>}</p>
                       )}
                     </div>
                     <div>
                       <span className="text-xs text-gray-500 block mb-1">Feeding Instructions</span>
-                      {editing ? (
-                        <textarea value={r.feeding_instructions??""} onChange={e=>onChange("feeding_instructions",e.target.value||null)}
-                          rows={3} className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
+                      {editingPet ? (
+                        <textarea value={currentPet.feeding_instructions??""} onChange={e=>onPetChange("feeding_instructions",e.target.value||null)}
+                          rows={4} className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
                       ) : (
-                        <p className="text-sm whitespace-pre-wrap">{r.feeding_instructions||<span className="text-gray-600">&mdash;</span>}</p>
+                        <p className="text-sm whitespace-pre-wrap">{currentPet.feeding_instructions || <span className="text-gray-600">&mdash;</span>}</p>
                       )}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Vaccines Tab */}
-              {tab==="vax" && (
-                <div>
-                  <p className="text-sm text-gray-400 mb-3">Vaccinations for <strong className="text-gray-200">{r.pet_name}</strong></p>
-                  <div className="space-y-1">
-                    <Vax label="DHPP" date={r.dhpp_date} editing={editing} field="dhpp_date" onChange={onChange}/>
-                    <Vax label="Bord" date={r.bordetella_exp} editing={editing} field="bordetella_exp" onChange={onChange}/>
-                    <Vax label="Rabies" date={r.rabies_exp} editing={editing} field="rabies_exp" onChange={onChange}/>
-                    <Vax label="FeLV" date={r.felv_date} editing={editing} field="felv_date" onChange={onChange}/>
+                {/* Vaccines */}
+                {tab==="vax" && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-3">Vaccinations for <strong className="text-gray-200">{currentPet.pet_name}</strong></p>
+                    <div className="space-y-1">
+                      <Vax label="DHPP" date={currentPet.dhpp_date} editing={editingPet} field="dhpp_date" onChange={onPetChange}/>
+                      <Vax label="Bord" date={currentPet.bordetella_exp} editing={editingPet} field="bordetella_exp" onChange={onPetChange}/>
+                      <Vax label="Rabies" date={currentPet.rabies_exp} editing={editingPet} field="rabies_exp" onChange={onPetChange}/>
+                      <Vax label="FeLV" date={currentPet.felv_date} editing={editingPet} field="felv_date" onChange={onPetChange}/>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Notes Tab */}
-              {tab==="notes" && (
-                <div>
-                  <span className="text-xs text-gray-500 block mb-1">Notes</span>
-                  {editing ? (
-                    <textarea value={r.notes??""} onChange={e=>onChange("notes",e.target.value||null)}
-                      rows={8} className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap min-h-[150px]">{r.notes||<span className="text-gray-600">No notes</span>}</p>
-                  )}
-                </div>
-              )}
-            </div>
+                {/* Notes */}
+                {tab==="notes" && (
+                  <div>
+                    <span className="text-xs text-gray-500 block mb-1">Notes</span>
+                    {editingPet ? (
+                      <textarea value={currentPet.notes??""} onChange={e=>onPetChange("notes",e.target.value||null)}
+                        rows={8} className="w-full bg-gray-700 border border-gray-500 rounded px-2 py-1.5 text-sm text-white"/>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap min-h-[150px]">{currentPet.notes || <span className="text-gray-600">No notes</span>}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                No pets for this owner. Click "+ Add Pet" to create one.
+              </div>
+            )}
           </div>
 
           <p className="text-center text-xs text-gray-600 mt-2">
