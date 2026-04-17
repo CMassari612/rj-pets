@@ -32,19 +32,38 @@ const SUPABASE_URL = "https://moxjbswcfwtamivwkdlr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1veGpic3djZnd0YW1pdndrZGxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjY0MzUsImV4cCI6MjA5MTg0MjQzNX0.fEaXWdO8AH7jxlhC24DmGofdXeS0TkDOC5kHPi6jY48";
 
 const supabase = {
-  async getAll(table, { order = "id", limit = 2000, offset = 0, search } = {}) {
+  async _fetchPage(table, { order, from, to, search }) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
     url.searchParams.set("order", `${order}.asc`);
-    url.searchParams.set("limit", limit);
-    url.searchParams.set("offset", offset);
     if (search) url.searchParams.set("or",
       `(owner_name.ilike.%${search}%,pet_name.ilike.%${search}%,phone_primary.ilike.%${search}%,breed.ilike.%${search}%)`);
     const res = await fetch(url, {
-      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Prefer: "count=exact" },
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Prefer: "count=exact",
+        Range: `${from}-${to}`,
+        "Range-Unit": "items",
+      },
     });
-    if (!res.ok) throw new Error(await res.text());
-    const count = res.headers.get("content-range")?.split("/")[1];
-    return { data: await res.json(), count: count ? parseInt(count) : null };
+    if (!res.ok && res.status !== 206) throw new Error(await res.text());
+    const cr = res.headers.get("content-range") || "";
+    const count = cr.split("/")[1];
+    return { data: await res.json(), count: count && count !== "*" ? parseInt(count) : null };
+  },
+  async getAll(table, { order = "id", search, pageSize = 1000 } = {}) {
+    const first = await this._fetchPage(table, { order, from: 0, to: pageSize - 1, search });
+    const total = first.count ?? first.data.length;
+    let data = first.data;
+    if (total > pageSize) {
+      const pages = [];
+      for (let from = pageSize; from < total; from += pageSize) {
+        pages.push(this._fetchPage(table, { order, from, to: from + pageSize - 1, search }));
+      }
+      const rest = await Promise.all(pages);
+      data = data.concat(...rest.map(r => r.data));
+    }
+    return { data, count: total };
   },
   async update(table, id, data) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
