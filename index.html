@@ -482,6 +482,22 @@ function RJPetsApp() {
     setSavingPet(false);
   };
 
+  // Delete pet
+  const [confirmDeletePet, setConfirmDeletePet] = useState(false);
+  const deletePet = async () => {
+    const pet = pets[petIdx];
+    if (!pet) return;
+    try {
+      if (connected) await supabase.delete("pets", pet.id);
+      const newPets = pets.filter(p => p.id !== pet.id);
+      setPets(newPets);
+      setPetIdx(Math.min(petIdx, Math.max(0, newPets.length - 1)));
+      setConfirmDeletePet(false);
+      setEditingPet(false); setEditPetData({});
+      showToast("Pet deleted");
+    } catch(e) { showToast("Delete pet failed: " + e.message, "error"); }
+  };
+
   // Add new pet to current client
   const addPet = async () => {
     const client = records[idx];
@@ -738,11 +754,30 @@ function RJPetsApp() {
 
             {currentPet ? (
               <div className="p-5">
+                {/* Delete Pet Confirm */}
+                {confirmDeletePet && (
+                  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm mx-4 border border-gray-600">
+                      <h3 className="text-lg font-bold mb-2">Delete Pet?</h3>
+                      <p className="text-gray-400 mb-4 text-sm">
+                        Permanently delete <strong>{currentPet?.pet_name}</strong>? This cannot be undone.
+                      </p>
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={()=>setConfirmDeletePet(false)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
+                        <button onClick={deletePet} className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-600 text-sm font-medium">Delete Pet</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Pet action bar */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     {!editingPet ? (
-                      <button onClick={startPetEdit} className="px-3 py-1 bg-blue-700 rounded hover:bg-blue-600 text-xs font-medium">Edit Pet</button>
+                      <>
+                        <button onClick={startPetEdit} className="px-3 py-1 bg-blue-700 rounded hover:bg-blue-600 text-xs font-medium">Edit Pet</button>
+                        <button onClick={()=>setConfirmDeletePet(true)} className="px-3 py-1 bg-red-800 rounded hover:bg-red-700 text-xs font-medium">Delete Pet</button>
+                      </>
                     ) : (
                       <>
                         <button onClick={savePet} disabled={savingPet} className="px-3 py-1 bg-green-700 rounded hover:bg-green-600 text-xs font-medium">
