@@ -332,6 +332,11 @@ function CageCard({ client, pet, onClose }) {
                 <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.down_payment || 0}</td>
               </tr>
               <tr>
+                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Bath</th>
+                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.bath || 0}</td>
+                <td colSpan="2" style={{border:"1px solid #333", padding:"4px 8px"}}></td>
+              </tr>
+              <tr>
                 <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Total</th>
                 <td style={{border:"1px solid #333", padding:"4px 8px", fontWeight:"bold"}}>${client.total || 0}</td>
                 <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Balance</th>
@@ -435,6 +440,16 @@ function RJPetsApp() {
         const tOut = f === "time_out" ? v : next.time_out;
         next.num_days = calcDays(dIn, dOut, tOut);
       }
+      // Auto-calc Total = Price * Days - Extra
+      const days = next.num_days || 0;
+      const price = next.price_per_day || 0;
+      const extra = next.daycare_extra || 0;
+      next.total = days * price - extra;
+      // Auto-calc Balance = Total - Down Pmt - Disc + Bath
+      const down = next.down_payment || 0;
+      const disc = next.cash_discount || 0;
+      const bath = next.bath || 0;
+      next.balance = next.total - down - disc + bath;
       return next;
     });
   };
@@ -493,7 +508,7 @@ function RJPetsApp() {
       date_in:null, date_out:null, time_in:"AM", time_out:"AM",
       num_days:null, price_per_day:null, total:null, balance:null,
       last_service_date:null, down_payment:null, percent_off:null,
-      cash_discount:0, daycare_extra:0,
+      cash_discount:0, daycare_extra:0, bath:0,
       date_of_birth:null, num_pets:null, note_date:null,
       // Legacy pet fields kept for compatibility
       pet_name:"", breed:"", dhpp_date:null, bordetella_exp:null, rabies_exp:null,
@@ -669,28 +684,35 @@ function RJPetsApp() {
               <F label="Date Out" value={r.date_out} field="date_out" editing={editing} onChange={onClientChange} type="date"/>
               <Dropdown label="Time Out" value={r.time_out} field="time_out" editing={editing} onChange={onClientChange} options={TIME_OPTIONS}/>
             </div>
-            <div className="grid grid-cols-7 gap-3 items-end mt-3">
+            <div className="grid grid-cols-8 gap-3 items-end mt-3">
               <div className="flex flex-col">
                 <span className="text-xs text-gray-400 leading-none"># Days</span>
                 <span className="text-lg font-bold text-blue-300">{r.num_days ?? "--"}</span>
               </div>
               <Dropdown label="Price/Day" value={r.price_per_day} field="price_per_day" editing={editing} onChange={onClientChange}
-                options={PRICE_OPTIONS} suffix="" w="90px"/>
-              <Dropdown label="% Off" value={r.percent_off} field="percent_off" editing={editing} onChange={onClientChange}
-                options={PERCENT_OFF_OPTIONS} suffix="%" w="80px"/>
-              <F label="Cash Disc." value={r.cash_discount} field="cash_discount" editing={editing} onChange={onClientChange} type="money" w="90px"/>
-              <F label="DC/Extra" value={r.daycare_extra} field="daycare_extra" editing={editing} onChange={onClientChange} type="money" w="90px"/>
-              <F label="Down Pmt" value={r.down_payment} field="down_payment" editing={editing} onChange={onClientChange} type="money" w="90px"/>
+                options={PRICE_OPTIONS} suffix="" w="80px"/>
+              <F label="DC/Extra" value={r.daycare_extra} field="daycare_extra" editing={editing} onChange={onClientChange} type="money" w="80px"/>
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400 leading-none">Total</span>
+                <span className="text-lg font-bold text-gray-100">{r.total != null ? `$${Number(r.total).toFixed(2)}` : "--"}</span>
+              </div>
+              <F label="Down Pmt" value={r.down_payment} field="down_payment" editing={editing} onChange={onClientChange} type="money" w="80px"/>
+              <F label="Cash Disc." value={r.cash_discount} field="cash_discount" editing={editing} onChange={onClientChange} type="money" w="80px"/>
+              <F label="Bath" value={r.bath} field="bath" editing={editing} onChange={onClientChange} type="money" w="80px"/>
               <div className="flex flex-col">
                 <span className="text-xs text-gray-400 leading-none">Balance</span>
                 <span className="text-xl font-bold text-green-400">
-                  {r.balance != null ? `$${Number(r.balance).toFixed(2)}` : <span className="text-yellow-500 text-sm">TBD</span>}
+                  {r.balance != null ? `$${Number(r.balance).toFixed(2)}` : "--"}
                 </span>
               </div>
             </div>
+            <div className="flex items-end gap-4 mt-3">
+              <Dropdown label="% Off" value={r.percent_off} field="percent_off" editing={editing} onChange={onClientChange}
+                options={PERCENT_OFF_OPTIONS} suffix="%" w="80px"/>
+            </div>
             {editing && (
-              <p className="text-xs text-yellow-500 mt-2 italic">
-                Balance formula not yet implemented — awaiting confirmation. Enter balance manually for now.
+              <p className="text-xs text-gray-500 mt-2 italic">
+                Total = Price &times; Days &minus; Extra &nbsp;|&nbsp; Balance = Total &minus; Down &minus; Disc + Bath
               </p>
             )}
           </div>
