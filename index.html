@@ -15,22 +15,22 @@
     };
   </script>
   <style>
-    * { scrollbar-width: thin; scrollbar-color: #4a5568 #1a202c; }
-    body { margin: 0; background: #111827; }
-    .fm-table { width: 100%; border-collapse: collapse; }
-    .fm-table td { border: 1px solid #374151; padding: 6px 10px; font-size: 14px; }
-    .fm-table .lbl { background: #1e293b; color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; width: 100px; white-space: nowrap; letter-spacing: 0.5px; }
-    .fm-table .val { color: #e2e8f0; }
-    .fm-table .val-big { color: #e2e8f0; font-size: 18px; font-weight: 700; }
+    * { scrollbar-width: thin; scrollbar-color: #999 #e0e0e0; }
+    body { margin: 0; background: #e8e8e8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .fm-table { width: 100%; border-collapse: collapse; background: #fff; }
+    .fm-table td { border-bottom: 1px solid #d0d0d0; padding: 5px 10px; font-size: 13px; color: #222; }
+    .fm-table .lbl { color: #555; font-size: 11px; font-weight: 600; width: 80px; white-space: nowrap; }
+    .fm-table .val { color: #111; }
+    .fm-table .val-big { color: #111; font-size: 16px; font-weight: 700; }
     .fm-table input, .fm-table select, .fm-table textarea {
-      background: #374151; border: 1px solid #4b5563; border-radius: 3px;
-      color: white; padding: 3px 6px; font-size: 13px; width: 100%;
+      background: #fff; border: 1px solid #bbb; border-radius: 2px;
+      color: #111; padding: 3px 6px; font-size: 13px; width: 100%;
     }
     .fm-table input:focus, .fm-table select:focus, .fm-table textarea:focus {
-      outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6;
+      outline: none; border-color: #666; box-shadow: 0 0 0 1px #999;
     }
-    .section-hdr { background: #334155; color: #cbd5e1; font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1px; padding: 5px 10px; border: 1px solid #374151; }
+    .section-hdr { background: #f0f0f0; color: #333; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; padding: 5px 10px; border-bottom: 1px solid #ccc; }
     .vax-pill { display: inline-block; padding: 1px 8px; border-radius: 9999px; font-size: 10px; font-weight: 600; text-align: center; min-width: 65px; }
     @media print {
       body { background: white !important; margin: 0; }
@@ -583,16 +583,16 @@ function RJPetsApp() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center h-screen bg-gray-900">
+    <div className="flex items-center justify-center h-screen" style={{background:"#e8e8e8"}}>
       <div className="text-center">
-        <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"/>
-        <p className="text-gray-400">Loading RJ Pets...</p>
+        <div className="animate-spin w-10 h-10 border-4 border-gray-500 border-t-transparent rounded-full mx-auto mb-4"/>
+        <p style={{color:"#666"}}>Loading RJ Pets...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen" style={{background:"#e8e8e8", color:"#111"}}>
       {/* Cage Card Modal */}
       {showCageCard && currentPet && r && (
         <CageCard client={r} pet={currentPet} onClose={()=>setShowCageCard(false)} />
@@ -600,15 +600,15 @@ function RJPetsApp() {
 
       {/* Delete Confirm */}
       {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm mx-4 border border-gray-600">
-            <h3 className="text-lg font-bold mb-2">Delete Record?</h3>
-            <p className="text-gray-400 mb-4 text-sm">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded shadow-2xl p-6 max-w-sm mx-4 border border-gray-300">
+            <h3 className="text-lg font-bold mb-2" style={{color:"#111"}}>Delete Record?</h3>
+            <p className="mb-4 text-sm" style={{color:"#555"}}>
               Permanently delete <strong>{r?.owner_name}</strong> and all their pets? This cannot be undone.
             </p>
             <div className="flex gap-2 justify-end">
-              <button onClick={()=>setConfirmDelete(false)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
-              <button onClick={deleteRecord} className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-600 text-sm font-medium">Delete</button>
+              <button onClick={()=>setConfirmDelete(false)} className="px-4 py-2 rounded text-sm" style={{background:"#d0d0d0",color:"#333"}}>Cancel</button>
+              <button onClick={deleteRecord} className="px-4 py-2 text-white rounded text-sm font-medium" style={{background:"#8B0000"}}>Delete</button>
             </div>
           </div>
         </div>
@@ -616,87 +616,87 @@ function RJPetsApp() {
 
       {/* Delete Pet Confirm */}
       {confirmDeletePet && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm mx-4 border border-gray-600">
-            <h3 className="text-lg font-bold mb-2">Delete Pet?</h3>
-            <p className="text-gray-400 mb-4 text-sm">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded shadow-2xl p-6 max-w-sm mx-4 border border-gray-300">
+            <h3 className="text-lg font-bold mb-2" style={{color:"#111"}}>Delete Pet?</h3>
+            <p className="mb-4 text-sm" style={{color:"#555"}}>
               Permanently delete <strong>{currentPet?.pet_name}</strong>? This cannot be undone.
             </p>
             <div className="flex gap-2 justify-end">
-              <button onClick={()=>setConfirmDeletePet(false)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
-              <button onClick={deletePet} className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-600 text-sm font-medium">Delete Pet</button>
+              <button onClick={()=>setConfirmDeletePet(false)} className="px-4 py-2 rounded text-sm" style={{background:"#d0d0d0",color:"#333"}}>Cancel</button>
+              <button onClick={deletePet} className="px-4 py-2 text-white rounded text-sm font-medium" style={{background:"#8B0000"}}>Delete Pet</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Toolbar */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between flex-wrap gap-2 no-print">
+      <div className="px-4 py-2 flex items-center justify-between flex-wrap gap-2 no-print" style={{background:"linear-gradient(to bottom, #e8e8e8, #d0d0d0)", borderBottom:"1px solid #bbb"}}>
         <div className="flex items-center gap-3">
-          <span className="text-xl font-black tracking-wider text-blue-400">RJ PETS</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${connected?"bg-green-700 text-green-200":"bg-yellow-700 text-yellow-200"}`}>
+          <span className="text-lg font-black tracking-wider" style={{color:"#333"}}>RJ PETS</span>
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{background: connected?"#2e7d32":"#c79100", color:"white"}}>
             {connected?"LIVE":"DEMO"}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button onClick={()=>go(0)} className="px-2 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&#x23EE;</button>
-          <button onClick={()=>go(idx-1)} className="px-3 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&larr;</button>
-          <span className="text-sm font-mono text-gray-400 mx-2 min-w-[80px] text-center">
+          <button onClick={()=>go(0)} className="px-2 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&#x23EE;</button>
+          <button onClick={()=>go(idx-1)} className="px-3 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&larr;</button>
+          <span className="text-sm font-mono mx-2 min-w-[80px] text-center" style={{color:"#555"}}>
             {records.length>0?`${idx+1} of ${records.length}`:"0 of 0"}
           </span>
-          <button onClick={()=>go(idx+1)} className="px-3 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&rarr;</button>
-          <button onClick={()=>go(records.length-1)} className="px-2 py-1 bg-gray-700 rounded text-gray-300 hover:bg-gray-600 text-sm">&#x23ED;</button>
-          <span className="text-xs text-gray-500 ml-2">{total.toLocaleString()} records</span>
+          <button onClick={()=>go(idx+1)} className="px-3 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&rarr;</button>
+          <button onClick={()=>go(records.length-1)} className="px-2 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&#x23ED;</button>
+          <span className="text-xs ml-2" style={{color:"#777"}}>{total.toLocaleString()} records</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={newRecord} className="px-3 py-1.5 bg-green-700 rounded hover:bg-green-600 text-sm font-medium">+ New</button>
+          <button onClick={newRecord} className="px-3 py-1.5 rounded text-sm font-medium text-white" style={{background:"#555"}}>+ New Record</button>
           {!editing ? (
             <>
-              <button onClick={startEdit} disabled={!r} className="px-3 py-1.5 bg-blue-700 rounded hover:bg-blue-600 text-sm font-medium disabled:opacity-30">Edit</button>
+              <button onClick={startEdit} disabled={!r} className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-30" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Edit</button>
               <button onClick={()=>setShowCageCard(true)} disabled={!currentPet}
-                className="px-3 py-1.5 bg-purple-700 rounded hover:bg-purple-600 text-sm font-medium disabled:opacity-30">
+                className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-30" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>
                 Cage Card
               </button>
             </>
           ) : (
             <>
-              <button onClick={saveClient} disabled={saving} className="px-3 py-1.5 bg-green-700 rounded hover:bg-green-600 text-sm font-medium">
+              <button onClick={saveClient} disabled={saving} className="px-3 py-1.5 rounded text-sm font-medium text-white" style={{background:"#2e7d32"}}>
                 {saving?"Saving...":"Save"}
               </button>
-              <button onClick={cancelEdit} className="px-3 py-1.5 bg-gray-600 rounded hover:bg-gray-500 text-sm">Cancel</button>
-              <button onClick={()=>setConfirmDelete(true)} className="px-3 py-1.5 bg-red-800 rounded hover:bg-red-700 text-sm">Delete</button>
+              <button onClick={cancelEdit} className="px-3 py-1.5 rounded text-sm" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Cancel</button>
+              <button onClick={()=>setConfirmDelete(true)} className="px-3 py-1.5 rounded text-sm text-white" style={{background:"#8B0000"}}>Delete</button>
             </>
           )}
         </div>
       </div>
 
       {/* Search */}
-      <div className="bg-gray-800 px-4 py-2 flex items-center gap-2 border-b border-gray-700 no-print">
-        <span className="text-xs text-gray-500 font-semibold uppercase">Search</span>
+      <div className="px-4 py-2 flex items-center gap-2 no-print" style={{background:"#ddd", borderBottom:"1px solid #bbb"}}>
+        <span className="text-xs font-semibold uppercase" style={{color:"#666"}}>Find</span>
         <input value={query} onChange={e=>setQuery(e.target.value)}
           onKeyDown={e=>e.key==="Enter"&&handleSearch()}
           placeholder="Owner, pet name, phone, address..."
-          className="flex-1 px-3 py-1.5 rounded bg-gray-700 text-white placeholder-gray-500 text-sm border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <button onClick={handleSearch} className="px-4 py-1.5 bg-blue-700 rounded hover:bg-blue-600 text-sm font-medium">Find</button>
-        {query && <button onClick={clearSearch} className="px-3 py-1.5 bg-gray-700 rounded hover:bg-gray-600 text-sm">Show All</button>}
+          className="flex-1 px-3 py-1.5 rounded text-sm" style={{background:"#fff",color:"#111",border:"1px solid #aaa"}} />
+        <button onClick={handleSearch} className="px-4 py-1.5 rounded text-sm font-medium" style={{background:"#555",color:"#fff"}}>Find</button>
+        {query && <button onClick={clearSearch} className="px-3 py-1.5 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>Show All</button>}
       </div>
 
       {/* Toast */}
       {toast && (
-        <div className={`text-center py-2 text-sm font-medium no-print ${toast.type==="error"?"bg-red-900 text-red-200":"bg-green-900 text-green-200"}`}>
+        <div className="text-center py-2 text-sm font-medium no-print" style={{background: toast.type==="error"?"#ffebee":"#e8f5e9", color: toast.type==="error"?"#b71c1c":"#2e7d32"}}>
           {toast.msg}
         </div>
       )}
 
       {!r ? (
-        <div className="flex items-center justify-center py-20 text-gray-500 no-print">
-          No records. {query?"Try a different search.":"Click '+ New' to add one."}
+        <div className="flex items-center justify-center py-20 no-print" style={{color:"#888"}}>
+          No records. {query?"Try a different search.":"Click '+ New Record' to add one."}
         </div>
       ) : (
-        <div className="max-w-4xl mx-auto mt-4 px-4 pb-8 space-y-3 no-print">
+        <div className="max-w-4xl mx-auto mt-4 px-4 pb-8 space-y-0 no-print" style={{background:"#fff", border:"1px solid #ccc", borderRadius:4}}>
 
           {/* ===== OWNER SECTION ===== */}
-          <div className="border border-gray-600 rounded overflow-hidden">
+          <div className="overflow-hidden">
             <div className="section-hdr">Owner</div>
             <table className="fm-table">
               <tbody>
@@ -714,7 +714,7 @@ function RJPetsApp() {
                   <td className="val" colSpan="3">
                     {editing
                       ? <input value={editData.address||""} onChange={e=>onClientChange("address",e.target.value||null)} />
-                      : (r.address || <span className="text-gray-600">&mdash;</span>)
+                      : (r.address || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                 </tr>
@@ -723,14 +723,14 @@ function RJPetsApp() {
                   <td className="val">
                     {editing
                       ? <input value={editData.phone_primary||""} onChange={e=>onClientChange("phone_primary",e.target.value||null)} />
-                      : (fmtPhone(r.phone_primary) || <span className="text-gray-600">&mdash;</span>)
+                      : (fmtPhone(r.phone_primary) || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                   <td className="lbl">Phone 2</td>
                   <td className="val">
                     {editing
                       ? <input value={editData.phone_secondary||""} onChange={e=>onClientChange("phone_secondary",e.target.value||null)} />
-                      : (fmtPhone(r.phone_secondary) || <span className="text-gray-600">&mdash;</span>)
+                      : (fmtPhone(r.phone_secondary) || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                 </tr>
@@ -739,14 +739,14 @@ function RJPetsApp() {
                   <td className="val">
                     {editing
                       ? <input value={editData.email||""} onChange={e=>onClientChange("email",e.target.value||null)} />
-                      : (r.email || <span className="text-gray-600">&mdash;</span>)
+                      : (r.email || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                   <td className="lbl">Emergency</td>
                   <td className="val">
                     {editing
                       ? <input value={editData.emergency_contact||""} onChange={e=>onClientChange("emergency_contact",e.target.value||null)} />
-                      : (r.emergency_contact || <span className="text-gray-600">&mdash;</span>)
+                      : (r.emergency_contact || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                 </tr>
@@ -755,7 +755,7 @@ function RJPetsApp() {
           </div>
 
           {/* ===== BOOKING SECTION ===== */}
-          <div className="border border-gray-600 rounded overflow-hidden">
+          <div className="overflow-hidden" style={{borderTop:"1px solid #ccc"}}>
             <div className="section-hdr">Booking</div>
             <table className="fm-table">
               <tbody>
@@ -764,7 +764,7 @@ function RJPetsApp() {
                   <td className="val" colSpan="3">
                     {editing
                       ? <DateInput value={editData.last_service_date} field="last_service_date" onChange={onClientChange} />
-                      : (fmtDate(r.last_service_date) || <span className="text-gray-600">&mdash;</span>)
+                      : (fmtDate(r.last_service_date) || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                 </tr>
@@ -773,7 +773,7 @@ function RJPetsApp() {
                   <td className="val">
                     {editing
                       ? <DateInput value={editData.date_in} field="date_in" onChange={onClientChange} />
-                      : (fmtDate(r.date_in) || <span className="text-gray-600">&mdash;</span>)
+                      : (fmtDate(r.date_in) || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                   <td className="lbl">Time In</td>
@@ -783,7 +783,7 @@ function RJPetsApp() {
                           <option value="">--</option>
                           {TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
                         </select>
-                      : (r.time_in || <span className="text-gray-600">&mdash;</span>)
+                      : (r.time_in || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                 </tr>
@@ -792,7 +792,7 @@ function RJPetsApp() {
                   <td className="val">
                     {editing
                       ? <DateInput value={editData.date_out} field="date_out" onChange={onClientChange} />
-                      : (fmtDate(r.date_out) || <span className="text-gray-600">&mdash;</span>)
+                      : (fmtDate(r.date_out) || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                   <td className="lbl">Time Out</td>
@@ -802,13 +802,13 @@ function RJPetsApp() {
                           <option value="">--</option>
                           {TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
                         </select>
-                      : (r.time_out || <span className="text-gray-600">&mdash;</span>)
+                      : (r.time_out || <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                 </tr>
                 <tr>
                   <td className="lbl"># Days</td>
-                  <td className="val-big" style={{color:"#93c5fd"}}>{r.num_days ?? "--"}</td>
+                  <td className="val-big">{r.num_days ?? "--"}</td>
                   <td className="lbl">Price/Day</td>
                   <td className="val">
                     {editing
@@ -816,7 +816,7 @@ function RJPetsApp() {
                           <option value="">--</option>
                           {PRICE_OPTIONS.map(o=><option key={o} value={o}>${o}</option>)}
                         </select>
-                      : (r.price_per_day != null ? `$${r.price_per_day}` : <span className="text-gray-600">&mdash;</span>)
+                      : (r.price_per_day != null ? `$${r.price_per_day}` : <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                 </tr>
@@ -844,7 +844,7 @@ function RJPetsApp() {
                   <td className="val">
                     {editing
                       ? <input type="number" step="0.01" value={editData.down_payment??""} onChange={e=>onClientChange("down_payment",e.target.value?Number(e.target.value):null)} />
-                      : (r.down_payment != null ? `$${Number(r.down_payment).toFixed(2)}` : <span className="text-gray-600">&mdash;</span>)
+                      : (r.down_payment != null ? `$${Number(r.down_payment).toFixed(2)}` : <span style={{color:"#bbb"}}>&mdash;</span>)
                     }
                   </td>
                   <td className="lbl">Cash Disc</td>
@@ -852,58 +852,60 @@ function RJPetsApp() {
                     {editing
                       ? <input type="number" step="0.01" value={editData.cash_discount??""} onChange={e=>onClientChange("cash_discount",e.target.value?Number(e.target.value):null)} />
                       : `$${Number(r.cash_discount || 0).toFixed(2)}`
-                    }
+                       }
                   </td>
                 </tr>
-                <tr style={{background:"#1e293b"}}>
+                <tr style={{background:"#f5f5f5"}}>
                   <td className="lbl" style={{fontWeight:700,fontSize:12}}>Total</td>
                   <td className="val-big">{r.total != null ? `$${Number(r.total).toFixed(2)}` : "--"}</td>
                   <td className="lbl" style={{fontWeight:700,fontSize:12}}>Balance</td>
-                  <td className="val-big" style={{color:"#4ade80"}}>{r.balance != null ? `$${Number(r.balance).toFixed(2)}` : "--"}</td>
+                  <td className="val-big" style={{color:"#8B0000"}}>{r.balance != null ? `$${Number(r.balance).toFixed(2)}` : "--"}</td>
                 </tr>
               </tbody>
             </table>
             {editing && (
-              <div style={{background:"#1e293b",borderTop:"1px solid #374151",padding:"4px 10px",fontSize:11,color:"#64748b",fontStyle:"italic"}}>
+              <div style={{background:"#f0f0f0",borderTop:"1px solid #ddd",padding:"4px 10px",fontSize:11,color:"#888",fontStyle:"italic"}}>
                 Total = (Days x Price + Extras) minus %Off &nbsp;|&nbsp; Balance = Total - Down - Cash Disc
               </div>
             )}
           </div>
 
           {/* ===== PET TABS ===== */}
-          <div className="border border-gray-600 rounded overflow-hidden">
+          <div className="overflow-hidden" style={{borderTop:"1px solid #ccc"}}>
             <div className="section-hdr flex items-center justify-between">
               <span>Pet</span>
               <div className="flex items-center gap-1">
                 {!editingPet ? (
                   <>
-                    <button onClick={startPetEdit} disabled={!currentPet} className="px-2 py-0.5 bg-blue-700 rounded text-white text-xs hover:bg-blue-600 disabled:opacity-30">Edit Pet</button>
-                    <button onClick={()=>setConfirmDeletePet(true)} disabled={!currentPet} className="px-2 py-0.5 bg-red-800 rounded text-white text-xs hover:bg-red-700 disabled:opacity-30">Delete Pet</button>
+                    <button onClick={startPetEdit} disabled={!currentPet} className="px-2 py-0.5 rounded text-xs disabled:opacity-30" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Edit Pet</button>
+                    <button onClick={()=>setConfirmDeletePet(true)} disabled={!currentPet} className="px-2 py-0.5 rounded text-white text-xs disabled:opacity-30" style={{background:"#8B0000"}}>Delete Pet</button>
                   </>
                 ) : (
                   <>
-                    <button onClick={savePet} disabled={savingPet} className="px-2 py-0.5 bg-green-700 rounded text-white text-xs hover:bg-green-600">
+                    <button onClick={savePet} disabled={savingPet} className="px-2 py-0.5 rounded text-white text-xs" style={{background:"#2e7d32"}}>
                       {savingPet?"Saving...":"Save Pet"}
                     </button>
-                    <button onClick={cancelPetEdit} className="px-2 py-0.5 bg-gray-600 rounded text-white text-xs hover:bg-gray-500">Cancel</button>
+                    <button onClick={cancelPetEdit} className="px-2 py-0.5 rounded text-xs" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Cancel</button>
                   </>
                 )}
               </div>
             </div>
 
             {/* Pet tab buttons */}
-            <div className="flex border-b border-gray-600" style={{background:"#1e293b"}}>
+            <div className="flex" style={{background:"#f0f0f0", borderBottom:"1px solid #ccc"}}>
               {pets.map((p, i) => (
                 <button key={p.id} onClick={() => { setPetIdx(i); setEditingPet(false); setEditPetData({}); }}
-                  className={`px-4 py-2 text-sm font-medium border-r border-gray-600 transition-all ${
-                    petIdx===i
-                      ? "bg-gray-800 text-blue-400 border-b-2 border-b-blue-500"
-                      : "text-gray-500 hover:text-gray-300 hover:bg-gray-700"}`}>
+                  style={{
+                    padding:"8px 16px", fontSize:13, fontWeight:500, borderRight:"1px solid #ccc",
+                    background: petIdx===i ? "#fff" : "#f0f0f0",
+                    color: petIdx===i ? "#111" : "#888",
+                    borderBottom: petIdx===i ? "2px solid #8B0000" : "none"
+                  }}>
                   {p.pet_name || "Pet "+(i+1)}
                 </button>
               ))}
               {pets.length < 5 && (
-                <button onClick={addPet} className="px-3 py-2 text-sm text-green-400 hover:text-green-300 hover:bg-gray-700 font-medium">
+                <button onClick={addPet} style={{padding:"8px 12px", fontSize:13, color:"#2e7d32", fontWeight:500, background:"transparent"}}>
                   + Add Pet
                 </button>
               )}
@@ -925,7 +927,7 @@ function RJPetsApp() {
                     <td className="val">
                       {editingPet
                         ? <input value={editPetData.breed||""} onChange={e=>onPetChange("breed",e.target.value||null)} />
-                        : (currentPet.breed || <span className="text-gray-600">&mdash;</span>)
+                        : (currentPet.breed || <span style={{color:"#bbb"}}>&mdash;</span>)
                       }
                     </td>
                   </tr>
@@ -934,20 +936,20 @@ function RJPetsApp() {
                     <td className="val">
                       {editingPet
                         ? <input value={editPetData.vet||""} onChange={e=>onPetChange("vet",e.target.value||null)} />
-                        : (currentPet.vet || <span className="text-gray-600">&mdash;</span>)
+                        : (currentPet.vet || <span style={{color:"#bbb"}}>&mdash;</span>)
                       }
                     </td>
                     <td className="lbl">DOB</td>
                     <td className="val">
                       {editingPet
                         ? <DateInput value={editPetData.date_of_birth} field="date_of_birth" onChange={onPetChange} />
-                        : (fmtDate(currentPet.date_of_birth) || <span className="text-gray-600">&mdash;</span>)
+                        : (fmtDate(currentPet.date_of_birth) || <span style={{color:"#bbb"}}>&mdash;</span>)
                       }
                     </td>
                   </tr>
 
                   {/* Vaccines inline */}
-                  <tr><td colSpan="4" className="section-hdr" style={{padding:"3px 10px",fontSize:10}}>Vaccines</td></tr>
+                  <tr><td colSpan="4" className="section-hdr" style={{padding:"3px 10px",fontSize:10,background:"#f5f5f5"}}>Vaccines</td></tr>
                   {[
                     {label:"DHPP", field:"dhpp_date"},
                     {label:"Bordetella", field:"bordetella_exp"},
@@ -962,7 +964,7 @@ function RJPetsApp() {
                         <td className="val">
                           {editingPet
                             ? <DateInput value={editPetData[v.field]} field={v.field} onChange={onPetChange} />
-                            : (fmtDate(date) || <span className="text-gray-600">&mdash;</span>)
+                            : (fmtDate(date) || <span style={{color:"#bbb"}}>&mdash;</span>)
                           }
                         </td>
                         <td colSpan="2" className="val">
@@ -973,13 +975,13 @@ function RJPetsApp() {
                   })}
 
                   {/* Care info inline */}
-                  <tr><td colSpan="4" className="section-hdr" style={{padding:"3px 10px",fontSize:10}}>Care</td></tr>
+                  <tr><td colSpan="4" className="section-hdr" style={{padding:"3px 10px",fontSize:10,background:"#f5f5f5"}}>Care</td></tr>
                   <tr>
                     <td className="lbl">Food</td>
                     <td className="val" colSpan="3">
                       {editingPet
                         ? <input value={editPetData.food_brand||""} onChange={e=>onPetChange("food_brand",e.target.value||null)} />
-                        : (currentPet.food_brand || <span className="text-gray-600">&mdash;</span>)
+                        : (currentPet.food_brand || <span style={{color:"#bbb"}}>&mdash;</span>)
                       }
                     </td>
                   </tr>
@@ -988,7 +990,7 @@ function RJPetsApp() {
                     <td className="val" colSpan="3">
                       {editingPet
                         ? <textarea value={editPetData.feeding_instructions||""} onChange={e=>onPetChange("feeding_instructions",e.target.value||null)} rows={2} />
-                        : (currentPet.feeding_instructions || <span className="text-gray-600">&mdash;</span>)
+                        : (currentPet.feeding_instructions || <span style={{color:"#bbb"}}>&mdash;</span>)
                       }
                     </td>
                   </tr>
@@ -997,7 +999,7 @@ function RJPetsApp() {
                     <td className="val" colSpan="3">
                       {editingPet
                         ? <textarea value={editPetData.medication_notes||""} onChange={e=>onPetChange("medication_notes",e.target.value||null)} rows={2} />
-                        : (currentPet.medication_notes || <span className="text-gray-600">&mdash;</span>)
+                        : (currentPet.medication_notes || <span style={{color:"#bbb"}}>&mdash;</span>)
                       }
                     </td>
                   </tr>
@@ -1006,22 +1008,24 @@ function RJPetsApp() {
                     <td className="val" colSpan="3">
                       {editingPet
                         ? <textarea value={editPetData.notes||""} onChange={e=>onPetChange("notes",e.target.value||null)} rows={3} />
-                        : (currentPet.notes || <span className="text-gray-600">&mdash;</span>)
+                        : (currentPet.notes || <span style={{color:"#bbb"}}>&mdash;</span>)
                       }
                     </td>
                   </tr>
                 </tbody>
               </table>
             ) : (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center" style={{color:"#999"}}>
                 No pets for this owner. Click "+ Add Pet" to create one.
               </div>
             )}
           </div>
 
-          <p className="text-center text-xs text-gray-600 mt-2">
-            Use &larr; &rarr; arrow keys to navigate records
-          </p>
+          {/* Footer with OWNER QUICK FIND hint */}
+          <div className="flex items-center justify-between px-3 py-2" style={{borderTop:"1px solid #ccc", background:"#f5f5f5"}}>
+            <span className="text-xs" style={{color:"#999"}}>Use &larr; &rarr; arrow keys to navigate</span>
+            <span className="text-xs font-bold tracking-wide" style={{color:"#555"}}>OWNER QUICK FIND</span>
+          </div>
         </div>
       )}
     </div>
