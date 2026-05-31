@@ -695,185 +695,89 @@ function RJPetsApp() {
       ) : (
         <div className="max-w-4xl mx-auto mt-4 px-4 pb-8 space-y-0 no-print" style={{background:"#fff", border:"1px solid #ccc", borderRadius:4}}>
 
-          {/* ===== OWNER SECTION ===== */}
-          <div className="overflow-hidden">
-            <div className="section-hdr">Owner</div>
-            <table className="fm-table">
-              <tbody>
-                <tr>
-                  <td className="lbl">Name</td>
-                  <td className="val" colSpan="3">
-                    {editing
-                      ? <input value={editData.owner_name||""} onChange={e=>onClientChange("owner_name",e.target.value||null)} style={{fontSize:16,fontWeight:700}} />
-                      : <span style={{fontSize:16,fontWeight:700}}>{r.owner_name}</span>
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl">Address</td>
-                  <td className="val" colSpan="3">
-                    {editing
-                      ? <input value={editData.address||""} onChange={e=>onClientChange("address",e.target.value||null)} />
-                      : (r.address || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl">Phone</td>
-                  <td className="val">
-                    {editing
-                      ? <input value={editData.phone_primary||""} onChange={e=>onClientChange("phone_primary",e.target.value||null)} />
-                      : (fmtPhone(r.phone_primary) || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                  <td className="lbl">Phone 2</td>
-                  <td className="val">
-                    {editing
-                      ? <input value={editData.phone_secondary||""} onChange={e=>onClientChange("phone_secondary",e.target.value||null)} />
-                      : (fmtPhone(r.phone_secondary) || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl">Email</td>
-                  <td className="val">
-                    {editing
-                      ? <input value={editData.email||""} onChange={e=>onClientChange("email",e.target.value||null)} />
-                      : (r.email || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                  <td className="lbl">Emergency</td>
-                  <td className="val">
-                    {editing
-                      ? <input value={editData.emergency_contact||""} onChange={e=>onClientChange("emergency_contact",e.target.value||null)} />
-                      : (r.emergency_contact || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          {/* ===== OWNER ROW ===== */}
+          <div style={{padding:"10px 12px", borderBottom:"1px solid #ccc"}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", flexWrap:"wrap", gap:4}}>
+              <div>
+                <span style={{fontSize:11, color:"#888", marginRight:6}}>Owner:</span>
+                {editing
+                  ? <input value={editData.owner_name||""} onChange={e=>onClientChange("owner_name",e.target.value||null)}
+                      style={{fontSize:18,fontWeight:700,border:"1px solid #bbb",borderRadius:2,padding:"2px 6px",width:220}} />
+                  : <span style={{fontSize:18,fontWeight:700,color:"#111"}}>{r.owner_name}</span>
+                }
+              </div>
+              <div style={{fontSize:13,color:"#333"}}>
+                <span style={{fontSize:11,color:"#888",marginRight:4}}>Address:</span>
+                {editing
+                  ? <input value={editData.address||""} onChange={e=>onClientChange("address",e.target.value||null)}
+                      style={{border:"1px solid #bbb",borderRadius:2,padding:"2px 6px",fontSize:13,width:260}} />
+                  : (r.address || <span style={{color:"#bbb"}}>&mdash;</span>)
+                }
+              </div>
+            </div>
+            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:4, fontSize:13, color:"#333"}}>
+              <span>
+                {editing
+                  ? <><span style={{fontSize:11,color:"#888"}}>Phone: </span><input value={editData.phone_primary||""} onChange={e=>onClientChange("phone_primary",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} /></>
+                  : fmtPhone(r.phone_primary) || ""
+                }
+              </span>
+              <span>
+                {editing
+                  ? <><span style={{fontSize:11,color:"#888"}}>Phone 2: </span><input value={editData.phone_secondary||""} onChange={e=>onClientChange("phone_secondary",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} /></>
+                  : fmtPhone(r.phone_secondary) || ""
+                }
+              </span>
+            </div>
+            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:2, fontSize:13, color:"#333"}}>
+              <span>
+                <span style={{fontSize:11,color:"#888"}}>Email: </span>
+                {editing
+                  ? <input value={editData.email||""} onChange={e=>onClientChange("email",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:180}} />
+                  : (r.email || "")
+                }
+              </span>
+              <span>
+                <span style={{fontSize:11,color:"#888"}}>Emg: </span>
+                {editing
+                  ? <input value={editData.emergency_contact||""} onChange={e=>onClientChange("emergency_contact",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} />
+                  : (r.emergency_contact || "")
+                }
+              </span>
+            </div>
           </div>
 
-          {/* ===== BOOKING SECTION ===== */}
-          <div className="overflow-hidden" style={{borderTop:"1px solid #ccc"}}>
-            <div className="section-hdr">Booking</div>
-            <table className="fm-table">
-              <tbody>
-                <tr>
-                  <td className="lbl">Last Svc</td>
-                  <td className="val" colSpan="3">
-                    {editing
-                      ? <DateInput value={editData.last_service_date} field="last_service_date" onChange={onClientChange} />
-                      : (fmtDate(r.last_service_date) || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl">Date In</td>
-                  <td className="val">
-                    {editing
-                      ? <DateInput value={editData.date_in} field="date_in" onChange={onClientChange} />
-                      : (fmtDate(r.date_in) || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                  <td className="lbl">Time In</td>
-                  <td className="val">
-                    {editing
-                      ? <select value={editData.time_in||""} onChange={e=>onClientChange("time_in",e.target.value||null)}>
-                          <option value="">--</option>
-                          {TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
-                        </select>
-                      : (r.time_in || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl">Date Out</td>
-                  <td className="val">
-                    {editing
-                      ? <DateInput value={editData.date_out} field="date_out" onChange={onClientChange} />
-                      : (fmtDate(r.date_out) || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                  <td className="lbl">Time Out</td>
-                  <td className="val">
-                    {editing
-                      ? <select value={editData.time_out||""} onChange={e=>onClientChange("time_out",e.target.value||null)}>
-                          <option value="">--</option>
-                          {TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
-                        </select>
-                      : (r.time_out || <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl"># Days</td>
-                  <td className="val-big">{r.num_days ?? "--"}</td>
-                  <td className="lbl">Price/Day</td>
-                  <td className="val">
-                    {editing
-                      ? <select value={editData.price_per_day??""} onChange={e=>onClientChange("price_per_day",e.target.value?Number(e.target.value):null)}>
-                          <option value="">--</option>
-                          {PRICE_OPTIONS.map(o=><option key={o} value={o}>${o}</option>)}
-                        </select>
-                      : (r.price_per_day != null ? `$${r.price_per_day}` : <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl">Extras</td>
-                  <td className="val">
-                    {editing
-                      ? <input type="number" step="0.01" value={editData.daycare_extra??""} onChange={e=>onClientChange("daycare_extra",e.target.value?Number(e.target.value):0)} />
-                      : `$${Number(displayExtras).toFixed(2)}`
-                    }
-                  </td>
-                  <td className="lbl">% Off</td>
-                  <td className="val">
-                    {editing
-                      ? <select value={editData.percent_off??""} onChange={e=>onClientChange("percent_off",e.target.value?Number(e.target.value):null)}>
-                          <option value="">--</option>
-                          {PERCENT_OFF_OPTIONS.map(o=><option key={o} value={o}>{o}%</option>)}
-                        </select>
-                      : (r.percent_off ? `${r.percent_off}%` : <span className="text-gray-600">0%</span>)
-                    }
-                  </td>
-                </tr>
-                <tr>
-                  <td className="lbl">Down Pmt</td>
-                  <td className="val">
-                    {editing
-                      ? <input type="number" step="0.01" value={editData.down_payment??""} onChange={e=>onClientChange("down_payment",e.target.value?Number(e.target.value):null)} />
-                      : (r.down_payment != null ? `$${Number(r.down_payment).toFixed(2)}` : <span style={{color:"#bbb"}}>&mdash;</span>)
-                    }
-                  </td>
-                  <td className="lbl">Cash Disc</td>
-                  <td className="val">
-                    {editing
-                      ? <input type="number" step="0.01" value={editData.cash_discount??""} onChange={e=>onClientChange("cash_discount",e.target.value?Number(e.target.value):null)} />
-                      : `$${Number(r.cash_discount || 0).toFixed(2)}`
-                       }
-                  </td>
-                </tr>
-                <tr style={{background:"#f5f5f5"}}>
-                  <td className="lbl" style={{fontWeight:700,fontSize:12}}>Total</td>
-                  <td className="val-big">{r.total != null ? `$${Number(r.total).toFixed(2)}` : "--"}</td>
-                  <td className="lbl" style={{fontWeight:700,fontSize:12}}>Balance</td>
-                  <td className="val-big" style={{color:"#8B0000"}}>{r.balance != null ? `$${Number(r.balance).toFixed(2)}` : "--"}</td>
-                </tr>
-              </tbody>
-            </table>
+          {/* ===== BOOKING ROWS (compact) ===== */}
+          <div style={{padding:"6px 12px", borderBottom:"1px solid #ccc", fontSize:13}}>
+            {/* Row 1: Date In, Time, # Days, Extras, Total, %Off, Balance */}
+            <div style={{display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", marginBottom:4}}>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Date In:</span> {editing ? <DateInput value={editData.date_in} field="date_in" onChange={onClientChange} /> : (fmtDate(r.date_in) || <span style={{color:"#bbb"}}>&mdash;</span>)}</span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Time:</span> {editing ? <select value={editData.time_in||""} onChange={e=>onClientChange("time_in",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select> : <strong>{r.time_in || "--"}</strong>}</span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}># Days:</span> <strong>{r.num_days ?? "--"}</strong></span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>DC/Extras:</span> {editing ? <input type="number" step="0.01" value={editData.daycare_extra??""} onChange={e=>onClientChange("daycare_extra",e.target.value?Number(e.target.value):0)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:60}} /> : displayExtras||0}</span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Total:</span> <strong>{r.total != null ? r.total : "--"}</strong></span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>% Off:</span> {editing ? <select value={editData.percent_off??""} onChange={e=>onClientChange("percent_off",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{PERCENT_OFF_OPTIONS.map(o=><option key={o} value={o}>{o}%</option>)}</select> : (r.percent_off||0)+"%"}</span>
+              <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>${r.balance != null ? Number(r.balance).toFixed(0) : "--"}</span></span>
+            </div>
+            {/* Row 2: Date Out, Time Out, Price, Cash, Down */}
+            <div style={{display:"flex", alignItems:"center", gap:12, flexWrap:"wrap"}}>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Date Out:</span> {editing ? <DateInput value={editData.date_out} field="date_out" onChange={onClientChange} /> : (fmtDate(r.date_out) || <span style={{color:"#bbb"}}>&mdash;</span>)}</span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Time:</span> {editing ? <select value={editData.time_out||""} onChange={e=>onClientChange("time_out",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select> : <strong>{r.time_out || "--"}</strong>}</span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Price:</span> {editing ? <select value={editData.price_per_day??""} onChange={e=>onClientChange("price_per_day",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{PRICE_OPTIONS.map(o=><option key={o} value={o}>${o}</option>)}</select> : <strong>{r.price_per_day || "--"}</strong>}</span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Cash:</span> {editing ? <input type="number" step="0.01" value={editData.cash_discount??""} onChange={e=>onClientChange("cash_discount",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:60}} /> : (r.cash_discount||0)}</span>
+              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Down:</span> {editing ? <input type="number" step="0.01" value={editData.down_payment??""} onChange={e=>onClientChange("down_payment",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:60}} /> : (r.down_payment||0)}</span>
+            </div>
             {editing && (
-              <div style={{background:"#f0f0f0",borderTop:"1px solid #ddd",padding:"4px 10px",fontSize:11,color:"#888",fontStyle:"italic"}}>
-                Total = (Days x Price + Extras) minus %Off &nbsp;|&nbsp; Balance = Total - Down - Cash Disc
+              <div style={{marginTop:4,fontSize:11,color:"#aaa",fontStyle:"italic"}}>
+                Total = (Days x Price + Extras) minus %Off &nbsp;|&nbsp; Balance = Total - Down - Cash
               </div>
             )}
           </div>
 
           {/* ===== PET TABS ===== */}
-          <div className="overflow-hidden" style={{borderTop:"1px solid #ccc"}}>
-            <div className="section-hdr flex items-center justify-between">
-              <span>Pet</span>
+          <div className="overflow-hidden">
+            <div className="flex items-center justify-between" style={{padding:"4px 12px", borderBottom:"1px solid #ccc"}}>
+              <span style={{fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:1}}>Pet</span>
               <div className="flex items-center gap-1">
                 {!editingPet ? (
                   <>
@@ -912,108 +816,57 @@ function RJPetsApp() {
             </div>
 
             {currentPet ? (
-              <table className="fm-table">
-                <tbody>
-                  {/* Pet Info */}
-                  <tr>
-                    <td className="lbl">Name</td>
-                    <td className="val">
-                      {editingPet
-                        ? <input value={editPetData.pet_name||""} onChange={e=>onPetChange("pet_name",e.target.value||null)} style={{fontWeight:700,fontSize:15}} />
-                        : <span style={{fontWeight:700,fontSize:15}}>{currentPet.pet_name}</span>
-                      }
-                    </td>
-                    <td className="lbl">Breed</td>
-                    <td className="val">
-                      {editingPet
-                        ? <input value={editPetData.breed||""} onChange={e=>onPetChange("breed",e.target.value||null)} />
-                        : (currentPet.breed || <span style={{color:"#bbb"}}>&mdash;</span>)
-                      }
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="lbl">Vet</td>
-                    <td className="val">
-                      {editingPet
-                        ? <input value={editPetData.vet||""} onChange={e=>onPetChange("vet",e.target.value||null)} />
-                        : (currentPet.vet || <span style={{color:"#bbb"}}>&mdash;</span>)
-                      }
-                    </td>
-                    <td className="lbl">DOB</td>
-                    <td className="val">
-                      {editingPet
-                        ? <DateInput value={editPetData.date_of_birth} field="date_of_birth" onChange={onPetChange} />
-                        : (fmtDate(currentPet.date_of_birth) || <span style={{color:"#bbb"}}>&mdash;</span>)
-                      }
-                    </td>
-                  </tr>
+              <div style={{padding:"8px 12px"}}>
+                {/* Pet name large + breed/vet/notes inline */}
+                <div style={{display:"flex", alignItems:"baseline", gap:16, flexWrap:"wrap", marginBottom:6}}>
+                  <div>
+                    <span style={{fontSize:11,color:"#888"}}>Pet: </span>
+                    {editingPet
+                      ? <input value={editPetData.pet_name||""} onChange={e=>onPetChange("pet_name",e.target.value||null)} style={{fontSize:18,fontWeight:700,border:"1px solid #bbb",borderRadius:2,padding:"2px 6px",width:160}} />
+                      : <span style={{fontSize:18,fontWeight:700}}>{currentPet.pet_name}</span>
+                    }
+                  </div>
+                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span>{editingPet ? <input value={editPetData.breed||""} onChange={e=>onPetChange("breed",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:100}} /> : (currentPet.breed||"")}</span>
+                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>VET: </span>{editingPet ? <input value={editPetData.vet||""} onChange={e=>onPetChange("vet",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:100}} /> : (currentPet.vet||"")}</span>
+                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Notes: </span>{editingPet ? <input value={editPetData.notes||""} onChange={e=>onPetChange("notes",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:140}} /> : (currentPet.notes||"")}</span>
+                </div>
 
-                  {/* Vaccines inline */}
-                  <tr><td colSpan="4" className="section-hdr" style={{padding:"3px 10px",fontSize:10,background:"#f5f5f5"}}>Vaccines</td></tr>
+                {/* Food / Feeding row */}
+                <div style={{display:"flex", gap:24, flexWrap:"wrap", marginBottom:4, fontSize:13}}>
+                  <span><span style={{fontSize:11,color:"#888"}}>Food: </span>{editingPet ? <input value={editPetData.food_brand||""} onChange={e=>onPetChange("food_brand",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} /> : (currentPet.food_brand||"")}</span>
+                  <span><span style={{fontSize:11,color:"#888"}}>Feeding: </span>{editingPet ? <input value={editPetData.feeding_instructions||""} onChange={e=>onPetChange("feeding_instructions",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:200}} /> : (currentPet.feeding_instructions||"")}</span>
+                </div>
+
+                {/* Vaccines as horizontal row with colored blocks */}
+                <div style={{display:"flex", gap:12, flexWrap:"wrap", marginTop:6, fontSize:13, alignItems:"center"}}>
                   {[
-                    {label:"DHPP", field:"dhpp_date"},
-                    {label:"Bordetella", field:"bordetella_exp"},
+                    {label:"Dhrpp", field:"dhpp_date"},
+                    {label:"Bord", field:"bordetella_exp"},
                     {label:"Rabies", field:"rabies_exp"},
                     {label:"FeLV", field:"felv_date"},
                   ].map(v => {
                     const date = currentPet[v.field];
                     const st = vaxStatus(date);
                     return (
-                      <tr key={v.field}>
-                        <td className="lbl">{v.label}</td>
-                        <td className="val">
-                          {editingPet
-                            ? <DateInput value={editPetData[v.field]} field={v.field} onChange={onPetChange} />
-                            : (fmtDate(date) || <span style={{color:"#bbb"}}>&mdash;</span>)
-                          }
-                        </td>
-                        <td colSpan="2" className="val">
-                          <span className="vax-pill" style={{background:st.bg, color:st.color}}>{st.label}</span>
-                        </td>
-                      </tr>
+                      <span key={v.field} style={{display:"inline-flex", alignItems:"center", gap:4}}>
+                        <span style={{fontSize:11,color:"#888"}}>{v.label}:</span>
+                        {editingPet
+                          ? <DateInput value={editPetData[v.field]} field={v.field} onChange={onPetChange} />
+                          : <span className="vax-pill" style={{background:st.bg, color:st.color}}>{fmtDate(date)||st.label}</span>
+                        }
+                      </span>
                     );
                   })}
+                </div>
 
-                  {/* Care info inline */}
-                  <tr><td colSpan="4" className="section-hdr" style={{padding:"3px 10px",fontSize:10,background:"#f5f5f5"}}>Care</td></tr>
-                  <tr>
-                    <td className="lbl">Food</td>
-                    <td className="val" colSpan="3">
-                      {editingPet
-                        ? <input value={editPetData.food_brand||""} onChange={e=>onPetChange("food_brand",e.target.value||null)} />
-                        : (currentPet.food_brand || <span style={{color:"#bbb"}}>&mdash;</span>)
-                      }
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="lbl">Feeding</td>
-                    <td className="val" colSpan="3">
-                      {editingPet
-                        ? <textarea value={editPetData.feeding_instructions||""} onChange={e=>onPetChange("feeding_instructions",e.target.value||null)} rows={2} />
-                        : (currentPet.feeding_instructions || <span style={{color:"#bbb"}}>&mdash;</span>)
-                      }
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="lbl">Meds</td>
-                    <td className="val" colSpan="3">
-                      {editingPet
-                        ? <textarea value={editPetData.medication_notes||""} onChange={e=>onPetChange("medication_notes",e.target.value||null)} rows={2} />
-                        : (currentPet.medication_notes || <span style={{color:"#bbb"}}>&mdash;</span>)
-                      }
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="lbl">Notes</td>
-                    <td className="val" colSpan="3">
-                      {editingPet
-                        ? <textarea value={editPetData.notes||""} onChange={e=>onPetChange("notes",e.target.value||null)} rows={3} />
-                        : (currentPet.notes || <span style={{color:"#bbb"}}>&mdash;</span>)
-                      }
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                {/* Meds row */}
+                {(currentPet.medication_notes || editingPet) && (
+                  <div style={{marginTop:6, fontSize:13}}>
+                    <span style={{fontSize:11,color:"#888"}}>Meds: </span>
+                    {editingPet ? <input value={editPetData.medication_notes||""} onChange={e=>onPetChange("medication_notes",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:"80%"}} /> : currentPet.medication_notes}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="p-8 text-center" style={{color:"#999"}}>
                 No pets for this owner. Click "+ Add Pet" to create one.
