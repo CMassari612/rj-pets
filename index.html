@@ -22,25 +22,29 @@
     .fm-table .lbl { color: #555; font-size: 11px; font-weight: 600; width: 80px; white-space: nowrap; }
     .fm-table .val { color: #111; }
     .fm-table .val-big { color: #111; font-size: 16px; font-weight: 700; }
-    .fm-table input, .fm-table select, .fm-table textarea {
-      background: #fff; border: 1px solid #bbb; border-radius: 2px;
-      color: #111; padding: 3px 6px; font-size: 13px; width: 100%;
-    }
-    .fm-table input:focus, .fm-table select:focus, .fm-table textarea:focus {
-      outline: none; border-color: #666; box-shadow: 0 0 0 1px #999;
-    }
-    .section-hdr { background: #f0f0f0; color: #333; font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1px; padding: 5px 10px; border-bottom: 1px solid #ccc; }
     .vax-pill { display: inline-block; padding: 1px 8px; border-radius: 9999px; font-size: 10px; font-weight: 600; text-align: center; min-width: 65px; }
+    .auto-input { border: 1px solid transparent; border-radius: 2px; padding: 2px 6px; font-size: 15px; color: #111; background: transparent; transition: border-color 0.15s; }
+    .auto-input:hover { border-color: #ccc; }
+    .auto-input:focus { border-color: #666; background: #fff; box-shadow: 0 0 0 1px #999; outline: none; }
+    .auto-input-lg { font-size: 22px; font-weight: 700; width: 280px; }
+    .auto-select { border: 1px solid transparent; border-radius: 2px; padding: 2px 6px; font-size: 15px; color: #111; background: transparent; }
+    .auto-select:hover { border-color: #ccc; }
+    .auto-select:focus { border-color: #666; background: #fff; outline: none; }
+    .saved-flash { animation: flash-green 0.6s ease-out; }
+    @keyframes flash-green { 0% { background: #c8e6c9; } 100% { background: transparent; } }
+    .feed-section { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 10px; margin: 3px 0; flex:1; min-width:220px; }
+    .feed-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
     @media print {
       body { background: white !important; margin: 0; }
       .no-print { display: none !important; }
       .print-only { display: block !important; }
-      .cage-card { page-break-inside: avoid; border: 2px solid #000 !important; background: white !important; color: black !important; }
+      .cage-card { page-break-inside: avoid; background: white !important; color: black !important; font-size: 11px; }
       .cage-card * { color: black !important; }
       .cage-card table { border-collapse: collapse; width: 100%; }
-      .cage-card td, .cage-card th { border: 1px solid #333; padding: 4px 8px; font-size: 12px; }
+      .cage-card td, .cage-card th { border: 1px solid #333; padding: 3px 6px; font-size: 10px; }
       .cage-card th { background: #eee !important; font-weight: bold; text-align: left; }
+      .cage-page { page-break-after: always; }
+      .cage-page:last-child { page-break-after: auto; }
     }
   </style>
 </head>
@@ -155,7 +159,7 @@ const parseDate = (str) => {
       return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     }
   }
-  return undefined; // invalid
+  return undefined;
 };
 const isExpired = (d) => d ? new Date(d) < new Date() : false;
 const isSoon = (d) => {
@@ -164,7 +168,6 @@ const isSoon = (d) => {
   return dt > now && dt - now < 30*86400000;
 };
 
-// Calculate days between two dates. PM pickup adds 1 extra day.
 const calcDays = (dateIn, dateOut, timeOut) => {
   if (!dateIn || !dateOut) return null;
   const d1 = new Date(dateIn+"T00:00:00");
@@ -179,152 +182,179 @@ const calcDays = (dateIn, dateOut, timeOut) => {
 const PRICE_OPTIONS = [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 35, 40, 45, 50];
 const PERCENT_OFF_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 50];
 const TIME_OPTIONS = ["AM", "PM"];
+const AMOUNT_OPTIONS = ["None","1/4","1/3","1/2","2/3","3/4","1","1 1/4","1 1/2","1 3/4","2","2 1/4","2 1/2","2 3/4","3","3 1/4","3 1/2","3 3/4","4","4 1/4","4 1/2","4 3/4","5"];
+const MED_AMOUNT_OPTIONS = ["None","1/4","1/3","1/2","2/3","3/4","1","1 1/4","1 1/2","1 3/4","2","2 1/4","2 1/2","2 3/4","3"];
 
-// ====== DATE INPUT (typed, not calendar) ======
-function DateInput({ value, onChange, field }) {
+// ====== AUTO-SAVE DATE INPUT ======
+function DateInput({ value, onSave, className }) {
   const [text, setText] = useState(fmtDate(value) || "");
   useEffect(() => { setText(fmtDate(value) || ""); }, [value]);
   const handleBlur = () => {
-    if (!text.trim()) { onChange(field, null); return; }
+    if (!text.trim()) { if (value !== null) onSave(null); return; }
     const iso = parseDate(text);
-    if (iso !== undefined) onChange(field, iso);
-    else setText(fmtDate(value) || "");
+    if (iso !== undefined && iso !== value) onSave(iso);
+    else if (iso === undefined) setText(fmtDate(value) || "");
   };
   return (
     <input type="text" value={text} onChange={e => setText(e.target.value)}
       onBlur={handleBlur} onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }}
-      placeholder="M/D/YYYY" style={{width:"100%"}} />
+      placeholder="M/D/YYYY" className={className || "auto-input"} style={{width:90}} />
   );
 }
 
-// ====== CAGE CARD (Printable) ======
-function CageCard({ client, pet, onClose }) {
-  const extras = (client.daycare_extra || 0) + (client.bath || 0);
-  const print = () => { window.print(); };
+// ====== FEEDING SLOT COMPONENT ======
+function FeedingSlot({ label, pet, prefix, onSave }) {
+  const kibbleField = `${prefix}_kibble`;
+  const wetField = `${prefix}_wet`;
+  const toppingsField = `${prefix}_toppings`;
+  const medsNameField = `${prefix}_meds_name`;
+  const medsAmtField = `${prefix}_meds_amt`;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center z-50 overflow-auto py-8 no-print" style={{zIndex:9999}}>
-      <div style={{maxWidth:700, width:"100%"}} className="mx-4">
-        <div className="flex justify-between items-center mb-3 no-print">
+    <div className="feed-section">
+      <div className="feed-label">{label}</div>
+      <div style={{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", fontSize:12}}>
+        <span><span style={{color:"#888",fontSize:10}}>Kibble:</span>
+          <select className="auto-select" style={{fontSize:12,width:60}} value={pet[kibbleField]||"None"}
+            onChange={e=>onSave(kibbleField,e.target.value)}>
+            {AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+        </span>
+        <span><span style={{color:"#888",fontSize:10}}>Wet:</span>
+          <select className="auto-select" style={{fontSize:12,width:60}} value={pet[wetField]||"None"}
+            onChange={e=>onSave(wetField,e.target.value)}>
+            {AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+        </span>
+        <span><span style={{color:"#888",fontSize:10}}>Toppings:</span>
+          <input className="auto-input" style={{width:80,fontSize:12}} value={pet[toppingsField]||""}
+            onBlur={e=>onSave(toppingsField,e.target.value)} onChange={e=>{
+              const el=e.target; const val=el.value;
+              // update local display immediately
+              el.dataset.pending=val;
+            }} defaultValue={pet[toppingsField]||""} maxLength={20} />
+        </span>
+        <span><span style={{color:"#888",fontSize:10}}>Meds:</span>
+          <input className="auto-input" style={{width:50,fontSize:12}} placeholder="name" value={pet[medsNameField]||""}
+            onBlur={e=>onSave(medsNameField,e.target.value)} onChange={e=>e} maxLength={20} />
+          <select className="auto-select" style={{fontSize:12,width:55}} value={pet[medsAmtField]||"None"}
+            onChange={e=>onSave(medsAmtField,e.target.value)}>
+            {MED_AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ====== CAGE CARD (Redesigned - compact 4x8) ======
+function CageCard({ client, pet, allPets, onClose }) {
+  const print = () => { window.print(); };
+
+  // Calculate days array for feeding schedule
+  const getDaysList = () => {
+    if (!client.date_in || !client.date_out) return [];
+    const start = new Date(client.date_in+"T00:00:00");
+    const end = new Date(client.date_out+"T00:00:00");
+    const days = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+      days.push(new Date(d));
+    }
+    return days;
+  };
+  const daysList = getDaysList();
+  // Split into pages of 7 days
+  const pages = [];
+  for (let i = 0; i < daysList.length; i += 7) {
+    pages.push(daysList.slice(i, i + 7));
+  }
+  if (pages.length === 0) pages.push([]);
+
+  const fmtShort = (d) => `${d.getMonth()+1}/${d.getDate()}`;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center z-50 overflow-auto py-4 no-print" style={{zIndex:9999}}>
+      <div style={{maxWidth:500, width:"100%"}} className="mx-4">
+        <div className="flex justify-between items-center mb-2 no-print">
           <h2 className="text-white text-lg font-bold">Cage Card Preview</h2>
           <div className="flex gap-2">
-            <button onClick={print} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 text-sm font-medium">
-              Print Cage Card
-            </button>
+            <button onClick={print} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500 text-sm font-medium">Print</button>
             <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 text-sm">Close</button>
           </div>
         </div>
-        <div className="cage-card bg-white text-black rounded p-6 print-only" style={{display:"block"}}>
-          <div style={{textAlign:"center", borderBottom:"2px solid #000", paddingBottom:8, marginBottom:12}}>
-            <h1 style={{margin:0, fontSize:22, fontWeight:"bold"}}>RJ PETS - CAGE CARD</h1>
-          </div>
-          <table style={{width:"100%", borderCollapse:"collapse", marginBottom:12}}>
-            <tbody>
-              <tr>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", width:"25%"}}>Owner</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{client.owner_name}</td>
-              </tr>
-              <tr>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Phone</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{fmtPhone(client.phone_primary)}</td>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Emergency</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{client.emergency_contact}</td>
-              </tr>
-              <tr>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Date In</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{fmtDate(client.date_in)} {client.time_in || ""}</td>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Date Out</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{fmtDate(client.date_out)} {client.time_out || ""}</td>
-              </tr>
-              <tr>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}># Days</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{client.num_days}</td>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Price/Day</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.price_per_day || 0}</td>
-              </tr>
-            </tbody>
-          </table>
 
-          <div style={{border:"2px solid #000", padding:12, marginBottom:12}}>
-            <h2 style={{margin:"0 0 8px", fontSize:16, borderBottom:"1px solid #666", paddingBottom:4}}>
-              {pet.pet_name || "Pet"} &mdash; {pet.breed || ""}
-            </h2>
-            <table style={{width:"100%", borderCollapse:"collapse"}}>
+        {/* Cage card pages */}
+        {pages.map((pageDays, pageIdx) => (
+          <div key={pageIdx} className="cage-card bg-white text-black rounded p-4 mb-3 print-only cage-page" style={{display:"block",maxWidth:500}}>
+            {/* Owner compact - no header */}
+            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:6}}>
               <tbody>
                 <tr>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", width:"25%"}}>VET</th>
-                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.vet}</td>
+                  <th style={{border:"1px solid #333",padding:"2px 6px",background:"#eee",width:"20%",fontSize:10}}>Owner</th>
+                  <td style={{border:"1px solid #333",padding:"2px 6px",fontSize:11}}>{client.owner_name}</td>
+                  <th style={{border:"1px solid #333",padding:"2px 6px",background:"#eee",width:"15%",fontSize:10}}>Phone</th>
+                  <td style={{border:"1px solid #333",padding:"2px 6px",fontSize:11}}>{fmtPhone(client.phone_primary)}</td>
                 </tr>
                 <tr>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Food</th>
-                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.food_brand}</td>
-                </tr>
-                <tr>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Feeding</th>
-                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.feeding_instructions}</td>
-                </tr>
-                <tr>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Medications</th>
-                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.medication_notes}</td>
-                </tr>
-                <tr>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Notes</th>
-                  <td style={{border:"1px solid #333", padding:"4px 8px"}} colSpan="3">{pet.notes}</td>
+                  <th style={{border:"1px solid #333",padding:"2px 6px",background:"#eee",fontSize:10}}>Date In</th>
+                  <td style={{border:"1px solid #333",padding:"2px 6px",fontSize:11}}>{fmtDate(client.date_in)} {client.time_in||""}</td>
+                  <th style={{border:"1px solid #333",padding:"2px 6px",background:"#eee",fontSize:10}}>Date Out</th>
+                  <td style={{border:"1px solid #333",padding:"2px 6px",fontSize:11}}>{fmtDate(client.date_out)} {client.time_out||""}</td>
                 </tr>
               </tbody>
             </table>
-            <table style={{width:"100%", borderCollapse:"collapse", marginTop:8}}>
-              <thead>
-                <tr>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>DHPP</th>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>Bordetella</th>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>Rabies</th>
-                  <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee", fontSize:11}}>FeLV</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.dhpp_date)}</td>
-                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.bordetella_exp)}</td>
-                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.rabies_exp)}</td>
-                  <td style={{border:"1px solid #333", padding:"4px 8px", textAlign:"center", fontSize:11}}>{fmtDate(pet.felv_date)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
 
-          <table style={{width:"100%", borderCollapse:"collapse"}}>
-            <tbody>
-              <tr>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>% Off</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>{client.percent_off || 0}%</td>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Cash Disc.</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.cash_discount || 0}</td>
-              </tr>
-              <tr>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Extras</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${extras}</td>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Down Pmt</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px"}}>${client.down_payment || 0}</td>
-              </tr>
-              <tr>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Total</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px", fontWeight:"bold"}}>${client.total || 0}</td>
-                <th style={{border:"1px solid #333", padding:"4px 8px", background:"#eee"}}>Balance</th>
-                <td style={{border:"1px solid #333", padding:"4px 8px", fontWeight:"bold"}}>${client.balance || 0}</td>
-              </tr>
-            </tbody>
-          </table>
+            {/* Pet info compact */}
+            <div style={{border:"1px solid #333",padding:4,marginBottom:6}}>
+              <div style={{fontWeight:"bold",fontSize:13}}>{pet.pet_name} — {pet.breed||""}</div>
+              <div style={{fontSize:9,display:"flex",gap:8,flexWrap:"wrap",marginTop:2}}>
+                <span>DHPP: {fmtDate(pet.dhpp_date)||"—"}</span>
+                <span>Bord: {fmtDate(pet.bordetella_exp)||"—"}</span>
+                <span>Rabies: {fmtDate(pet.rabies_exp)||"—"}</span>
+                <span>FeLV: {fmtDate(pet.felv_date)||"—"}</span>
+              </div>
+              {pet.pet_belongings && <div style={{fontSize:9,marginTop:2}}>Belongings: {pet.pet_belongings}</div>}
+              <div style={{fontSize:9,marginTop:1}}>Blanket: {pet.blanket||"No"}</div>
+              {pet.notes && <div style={{fontSize:9,marginTop:1}}>Notes: {pet.notes}</div>}
+            </div>
 
-          <div style={{marginTop:16, borderTop:"1px solid #999", paddingTop:8}}>
-            <div style={{display:"flex", justifyContent:"space-between"}}>
-              <div><strong>AM Meds:</strong> _______________</div>
-              <div><strong>PM Meds:</strong> _______________</div>
-            </div>
-            <div style={{marginTop:8}}>
-              <strong>Allergies:</strong> _______________________________________________
-            </div>
+            {/* Daily feeding schedule boxes */}
+            {pageDays.length > 0 && (
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:9}}>
+                <thead>
+                  <tr>
+                    <th style={{border:"1px solid #333",padding:"2px 4px",background:"#eee",width:"12%"}}>Day</th>
+                    <th style={{border:"1px solid #333",padding:"2px 4px",background:"#eee"}}>AM</th>
+                    <th style={{border:"1px solid #333",padding:"2px 4px",background:"#eee",fontSize:8}}>Noon</th>
+                    <th style={{border:"1px solid #333",padding:"2px 4px",background:"#eee"}}>PM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageDays.map((day,di) => {
+                    const fmtFeed = (prefix) => {
+                      const k = pet[`${prefix}_kibble`], w = pet[`${prefix}_wet`], t = pet[`${prefix}_toppings`], mn = pet[`${prefix}_meds_name`], ma = pet[`${prefix}_meds_amt`];
+                      const parts = [];
+                      if (k && k!=="None") parts.push(`K:${k}`);
+                      if (w && w!=="None") parts.push(`W:${w}`);
+                      if (t) parts.push(t);
+                      if (mn && ma && ma!=="None") parts.push(`${mn.slice(0,3)}:${ma}`);
+                      return parts.join(", ") || "—";
+                    };
+                    return (
+                      <tr key={di}>
+                        <td style={{border:"1px solid #333",padding:"2px 4px",fontWeight:"bold"}}>{fmtShort(day)}</td>
+                        <td style={{border:"1px solid #333",padding:"2px 4px"}}>{fmtFeed("feed_am")}</td>
+                        <td style={{border:"1px solid #333",padding:"2px 4px"}}>{fmtFeed("feed_noon")}</td>
+                        <td style={{border:"1px solid #333",padding:"2px 4px"}}>{fmtFeed("feed_pm")}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+            {pages.length > 1 && <div style={{fontSize:8,textAlign:"right",marginTop:2}}>Page {pageIdx+1} of {pages.length}</div>}
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -335,11 +365,8 @@ function RJPetsApp() {
   const [records, setRecords] = useState([]);
   const [idx, setIdx] = useState(0);
   const [total, setTotal] = useState(0);
-  const [editing, setEditing] = useState(false);
-  const [editData, setEditData] = useState({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [connected, setConnected] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -347,28 +374,68 @@ function RJPetsApp() {
   // Pets state
   const [pets, setPets] = useState([]);
   const [petIdx, setPetIdx] = useState(0);
-  const [editingPet, setEditingPet] = useState(false);
-  const [editPetData, setEditPetData] = useState({});
-  const [savingPet, setSavingPet] = useState(false);
   const [showCageCard, setShowCageCard] = useState(false);
   const [confirmDeletePet, setConfirmDeletePet] = useState(false);
 
-  const r = editing ? editData : (records[idx] || null);
-  const currentPet = editingPet ? editPetData : (pets[petIdx] || null);
+  const r = records[idx] || null;
+  const currentPet = pets[petIdx] || null;
 
   const showToast = (msg, type="success") => {
     setToast({msg,type});
-    setTimeout(()=>setToast(null), 2500);
+    setTimeout(()=>setToast(null), 1500);
   };
 
-  // Fetch clients (with pet name search support)
+  // ====== AUTO-SAVE: save a single client field on blur ======
+  const saveClientField = async (field, value) => {
+    if (!r || !connected) return;
+    const id = r.id;
+    // Update local state immediately
+    const updated = {...r, [field]: value};
+    // Recalc if needed
+    if (["date_in","date_out","time_out","time_in","num_days","price_per_day","daycare_extra","percent_off","down_payment","cash_discount","bath"].includes(field)) {
+      if (field === "date_in" || field === "date_out" || field === "time_out") {
+        const dIn = field === "date_in" ? value : updated.date_in;
+        const dOut = field === "date_out" ? value : updated.date_out;
+        const tOut = field === "time_out" ? value : updated.time_out;
+        updated.num_days = calcDays(dIn, dOut, tOut);
+      }
+      // Combine bath into extras for calc
+      const days = updated.num_days || 0;
+      const price = updated.price_per_day || 0;
+      const extras = (updated.daycare_extra || 0) + (updated.bath || 0);
+      const pctOff = updated.percent_off || 0;
+      let subtotal = (days * price) + extras;
+      if (pctOff > 0) subtotal = subtotal * (1 - pctOff / 100);
+      updated.total = Math.round(subtotal * 100) / 100;
+      updated.balance = Math.round((updated.total - (updated.down_payment||0) - (updated.cash_discount||0)) * 100) / 100;
+    }
+    setRecords(p => p.map(x => x.id === id ? updated : x));
+    // Save to Supabase
+    try {
+      const {id: _id, created_at, updated_at, ...rest} = updated;
+      await supabase.update("clients", id, rest);
+      showToast("Saved");
+    } catch(e) { showToast("Save failed: "+e.message, "error"); }
+  };
+
+  // ====== AUTO-SAVE: save a single pet field ======
+  const savePetField = async (field, value) => {
+    if (!currentPet || !connected) return;
+    const id = currentPet.id;
+    const updated = {...currentPet, [field]: value};
+    setPets(p => p.map(x => x.id === id ? updated : x));
+    try {
+      await supabase.update("pets", id, {[field]: value});
+      showToast("Saved");
+    } catch(e) { showToast("Save failed: "+e.message, "error"); }
+  };
+
+  // Fetch clients
   const fetchRecords = useCallback(async (search="") => {
     setLoading(true);
     try {
       const {data,count} = await supabase.getAll("clients",{search:search||undefined});
       let allData = data;
-
-      // Also search pets by pet_name when searching
       if (search) {
         try {
           const petUrl = new URL(`${SUPABASE_URL}/rest/v1/pets`);
@@ -386,9 +453,8 @@ function RJPetsApp() {
               allData = [...allData, ...extra];
             }
           }
-        } catch {} // pet search is best-effort
+        } catch {}
       }
-
       setRecords(allData); setTotal(allData.length); setIdx(0); setConnected(true);
     } catch {
       setRecords([]); setTotal(0); setIdx(0); setConnected(false);
@@ -396,97 +462,22 @@ function RJPetsApp() {
     setLoading(false);
   },[]);
 
-  // Fetch pets for current client
   const fetchPets = useCallback(async (clientId) => {
     if (!clientId || !connected) { setPets([]); setPetIdx(0); return; }
     try {
       const {data} = await supabase.getByFilter("pets", { client_id: `eq.${clientId}` });
-      setPets(data || []);
-      setPetIdx(0);
-    } catch {
-      setPets([]);
-      setPetIdx(0);
-    }
+      setPets(data || []); setPetIdx(0);
+    } catch { setPets([]); setPetIdx(0); }
   }, [connected]);
 
   useEffect(()=>{fetchRecords()},[fetchRecords]);
-
   useEffect(()=>{
     const client = records[idx];
     if (client) fetchPets(client.id);
     else { setPets([]); setPetIdx(0); }
-    setEditingPet(false); setEditPetData({});
   },[idx, records, fetchPets]);
 
-  const go = (i) => { if(i>=0&&i<records.length){setIdx(i);setEditing(false);setEditData({});setEditingPet(false);setEditPetData({});}};
-
-  // Client editing
-  const startEdit = () => {
-    const rec = {...records[idx]};
-    // Combine bath into daycare_extra for editing
-    rec.daycare_extra = (rec.daycare_extra || 0) + (rec.bath || 0);
-    rec.bath = 0;
-    setEditing(true);
-    setEditData(rec);
-  };
-
-  // Recalc formula helper
-  const recalc = (next) => {
-    const days = next.num_days || 0;
-    const price = next.price_per_day || 0;
-    const extras = next.daycare_extra || 0;
-    const pctOff = next.percent_off || 0;
-
-    let subtotal = (days * price) + extras;
-    if (pctOff > 0) subtotal = subtotal * (1 - pctOff / 100);
-    next.total = Math.round(subtotal * 100) / 100;
-
-    const down = next.down_payment || 0;
-    const disc = next.cash_discount || 0;
-    next.balance = Math.round((next.total - down - disc) * 100) / 100;
-    return next;
-  };
-
-  const onClientChange = (f,v) => {
-    setEditData(p => {
-      const next = {...p, [f]: v};
-      if (f === "date_in" || f === "date_out" || f === "time_out") {
-        const dIn = f === "date_in" ? v : next.date_in;
-        const dOut = f === "date_out" ? v : next.date_out;
-        const tOut = f === "time_out" ? v : next.time_out;
-        next.num_days = calcDays(dIn, dOut, tOut);
-      }
-      return recalc(next);
-    });
-  };
-  const cancelEdit = () => { setEditing(false); setEditData({}); };
-
-  const saveClient = async () => {
-    setSaving(true);
-    try {
-      const {id,created_at,updated_at,...rest} = editData;
-      if (connected) await supabase.update("clients",id,rest);
-      setRecords(p=>p.map(x=>x.id===id?{...x,...rest}:x));
-      setEditing(false); setEditData({}); showToast("Client saved!");
-    } catch(e) { showToast("Save failed: "+e.message,"error"); }
-    setSaving(false);
-  };
-
-  // Pet editing
-  const startPetEdit = () => { setEditingPet(true); setEditPetData({...pets[petIdx]}); };
-  const onPetChange = (f,v) => setEditPetData(p=>({...p,[f]:v}));
-  const cancelPetEdit = () => { setEditingPet(false); setEditPetData({}); };
-
-  const savePet = async () => {
-    setSavingPet(true);
-    try {
-      const {id,created_at,updated_at,client_id,...rest} = editPetData;
-      if (connected) await supabase.update("pets",id,rest);
-      setPets(p=>p.map(x=>x.id===id?{...x,...rest}:x));
-      setEditingPet(false); setEditPetData({}); showToast("Pet saved!");
-    } catch(e) { showToast("Pet save failed: "+e.message,"error"); }
-    setSavingPet(false);
-  };
+  const go = (i) => { if(i>=0&&i<records.length) setIdx(i); };
 
   const deletePet = async () => {
     const pet = pets[petIdx];
@@ -497,7 +488,6 @@ function RJPetsApp() {
       setPets(newPets);
       setPetIdx(Math.min(petIdx, Math.max(0, newPets.length - 1)));
       setConfirmDeletePet(false);
-      setEditingPet(false); setEditPetData({});
       showToast("Pet deleted");
     } catch(e) { showToast("Delete pet failed: " + e.message, "error"); }
   };
@@ -508,7 +498,11 @@ function RJPetsApp() {
     const blank = {
       client_id: client.id, pet_name: "New Pet", breed: "", date_of_birth: null,
       vet: "", dhpp_date: null, bordetella_exp: null, rabies_exp: null, felv_date: null,
-      medication_notes: "", feeding_instructions: "", food_brand: "", notes: "", note_date: null
+      medication_notes: "", feeding_instructions: "", food_brand: "", notes: "", note_date: null,
+      pet_belongings: "", blanket: "No",
+      feed_am_kibble: "None", feed_am_wet: "None", feed_am_toppings: "", feed_am_meds_name: "", feed_am_meds_amt: "None",
+      feed_noon_kibble: "None", feed_noon_wet: "None", feed_noon_toppings: "", feed_noon_meds_name: "", feed_noon_meds_amt: "None",
+      feed_pm_kibble: "None", feed_pm_wet: "None", feed_pm_toppings: "", feed_pm_meds_name: "", feed_pm_meds_amt: "None",
     };
     try {
       if (connected) {
@@ -516,7 +510,6 @@ function RJPetsApp() {
         setPets(p => [...p, data[0]]);
         setPetIdx(pets.length);
       }
-      setEditingPet(true); setEditPetData(connected ? {} : {...blank, id: Date.now()});
     } catch(e) { showToast("Add pet failed: "+e.message,"error"); }
   };
 
@@ -528,6 +521,7 @@ function RJPetsApp() {
       last_service_date:null, down_payment:null, percent_off:null,
       cash_discount:0, daycare_extra:0, bath:0,
       date_of_birth:null, num_pets:null, note_date:null,
+      waiver_date: null,
       pet_name:"", breed:"", dhpp_date:null, bordetella_exp:null, rabies_exp:null,
       felv_date:null, feeding_instructions:"", food_brand:"", medication_notes:"", notes:"" };
     try {
@@ -535,12 +529,8 @@ function RJPetsApp() {
         const {data} = await supabase.insert("clients",blank);
         const newClient = data[0];
         setRecords(p=>[...p,newClient]); setIdx(records.length); setTotal(t=>t+1);
-        await supabase.insert("pets", { client_id: newClient.id, pet_name: "New Pet" });
-      } else {
-        const fakeId = Math.max(0,...records.map(r=>r.id))+1;
-        setRecords(p=>[...p,{id:fakeId,...blank}]); setIdx(records.length); setTotal(t=>t+1);
+        await supabase.insert("pets", { client_id: newClient.id, pet_name: "New Pet", blanket: "No" });
       }
-      startEdit();
     } catch(e) { showToast("Create failed: "+e.message,"error"); }
   };
 
@@ -551,7 +541,7 @@ function RJPetsApp() {
       const newRecs = records.filter(x=>x.id!==r.id);
       setRecords(newRecs); setTotal(t=>t-1);
       setIdx(Math.min(idx,newRecs.length-1));
-      setConfirmDelete(false); setEditing(false);
+      setConfirmDelete(false);
       showToast("Record deleted");
     } catch(e) { showToast("Delete failed: "+e.message,"error"); }
   };
@@ -561,7 +551,9 @@ function RJPetsApp() {
 
   useEffect(()=>{
     const h = (e) => {
-      if(editing||editingPet) return;
+      if(document.activeElement && document.activeElement.tagName==="INPUT") return;
+      if(document.activeElement && document.activeElement.tagName==="SELECT") return;
+      if(document.activeElement && document.activeElement.tagName==="TEXTAREA") return;
       if(e.key==="ArrowLeft"){e.preventDefault();go(idx-1);}
       if(e.key==="ArrowRight"){e.preventDefault();go(idx+1);}
     };
@@ -569,10 +561,8 @@ function RJPetsApp() {
     return ()=>window.removeEventListener("keydown",h);
   });
 
-  // Computed extras for display (combines daycare_extra + bath from DB)
   const displayExtras = r ? ((r.daycare_extra || 0) + (r.bath || 0)) : 0;
 
-  // Vax status helper
   const vaxStatus = (date) => {
     const exp = isExpired(date);
     const soon = isSoon(date);
@@ -593,37 +583,34 @@ function RJPetsApp() {
 
   return (
     <div className="min-h-screen" style={{background:"#e8e8e8", color:"#111"}}>
-      {/* Cage Card Modal */}
       {showCageCard && currentPet && r && (
-        <CageCard client={r} pet={currentPet} onClose={()=>setShowCageCard(false)} />
+        <CageCard client={r} pet={currentPet} allPets={pets} onClose={()=>setShowCageCard(false)} />
       )}
 
-      {/* Delete Confirm */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded shadow-2xl p-6 max-w-sm mx-4 border border-gray-300">
-            <h3 className="text-lg font-bold mb-2" style={{color:"#111"}}>Delete Record?</h3>
+            <h3 className="text-lg font-bold mb-2">Delete Record?</h3>
             <p className="mb-4 text-sm" style={{color:"#555"}}>
-              Permanently delete <strong>{r?.owner_name}</strong> and all their pets? This cannot be undone.
+              Permanently delete <strong>{r?.owner_name}</strong> and all their pets?
             </p>
             <div className="flex gap-2 justify-end">
-              <button onClick={()=>setConfirmDelete(false)} className="px-4 py-2 rounded text-sm" style={{background:"#d0d0d0",color:"#333"}}>Cancel</button>
+              <button onClick={()=>setConfirmDelete(false)} className="px-4 py-2 rounded text-sm" style={{background:"#d0d0d0"}}>Cancel</button>
               <button onClick={deleteRecord} className="px-4 py-2 text-white rounded text-sm font-medium" style={{background:"#8B0000"}}>Delete</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Pet Confirm */}
       {confirmDeletePet && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded shadow-2xl p-6 max-w-sm mx-4 border border-gray-300">
-            <h3 className="text-lg font-bold mb-2" style={{color:"#111"}}>Delete Pet?</h3>
+            <h3 className="text-lg font-bold mb-2">Delete Pet?</h3>
             <p className="mb-4 text-sm" style={{color:"#555"}}>
-              Permanently delete <strong>{currentPet?.pet_name}</strong>? This cannot be undone.
+              Permanently delete <strong>{currentPet?.pet_name}</strong>?
             </p>
             <div className="flex gap-2 justify-end">
-              <button onClick={()=>setConfirmDeletePet(false)} className="px-4 py-2 rounded text-sm" style={{background:"#d0d0d0",color:"#333"}}>Cancel</button>
+              <button onClick={()=>setConfirmDeletePet(false)} className="px-4 py-2 rounded text-sm" style={{background:"#d0d0d0"}}>Cancel</button>
               <button onClick={deletePet} className="px-4 py-2 text-white rounded text-sm font-medium" style={{background:"#8B0000"}}>Delete Pet</button>
             </div>
           </div>
@@ -650,23 +637,11 @@ function RJPetsApp() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={newRecord} className="px-3 py-1.5 rounded text-sm font-medium text-white" style={{background:"#555"}}>+ New Record</button>
-          {!editing ? (
-            <>
-              <button onClick={startEdit} disabled={!r} className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-30" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Edit</button>
-              <button onClick={()=>setShowCageCard(true)} disabled={!currentPet}
-                className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-30" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>
-                Cage Card
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={saveClient} disabled={saving} className="px-3 py-1.5 rounded text-sm font-medium text-white" style={{background:"#2e7d32"}}>
-                {saving?"Saving...":"Save"}
-              </button>
-              <button onClick={cancelEdit} className="px-3 py-1.5 rounded text-sm" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Cancel</button>
-              <button onClick={()=>setConfirmDelete(true)} className="px-3 py-1.5 rounded text-sm text-white" style={{background:"#8B0000"}}>Delete</button>
-            </>
-          )}
+          <button onClick={()=>setShowCageCard(true)} disabled={!currentPet}
+            className="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-30" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>
+            Cage Card
+          </button>
+          <button onClick={()=>setConfirmDelete(true)} disabled={!r} className="px-3 py-1.5 rounded text-sm text-white disabled:opacity-30" style={{background:"#8B0000"}}>Delete</button>
         </div>
       </div>
 
@@ -681,9 +656,8 @@ function RJPetsApp() {
         {query && <button onClick={clearSearch} className="px-3 py-1.5 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>Show All</button>}
       </div>
 
-      {/* Toast */}
       {toast && (
-        <div className="text-center py-2 text-sm font-medium no-print" style={{background: toast.type==="error"?"#ffebee":"#e8f5e9", color: toast.type==="error"?"#b71c1c":"#2e7d32"}}>
+        <div className="text-center py-1 text-xs font-medium no-print" style={{background: toast.type==="error"?"#ffebee":"#e8f5e9", color: toast.type==="error"?"#b71c1c":"#2e7d32"}}>
           {toast.msg}
         </div>
       )}
@@ -693,112 +667,91 @@ function RJPetsApp() {
           No records. {query?"Try a different search.":"Click '+ New Record' to add one."}
         </div>
       ) : (
-        <div className="max-w-4xl mx-auto mt-4 px-4 pb-8 space-y-0 no-print" style={{background:"#fff", border:"1px solid #ccc", borderRadius:4}}>
+        <div className="mx-auto mt-4 px-4 pb-8 space-y-0 no-print" style={{background:"#fff", border:"1px solid #ccc", borderRadius:4, maxWidth:1200}}>
 
-          {/* ===== OWNER ROW ===== */}
-          <div style={{padding:"10px 12px", borderBottom:"1px solid #ccc"}}>
+          {/* ===== OWNER ROW (auto-save) ===== */}
+          <div style={{padding:"14px 20px", borderBottom:"1px solid #ccc"}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", flexWrap:"wrap", gap:4}}>
               <div>
                 <span style={{fontSize:11, color:"#888", marginRight:6}}>Owner:</span>
-                {editing
-                  ? <input value={editData.owner_name||""} onChange={e=>onClientChange("owner_name",e.target.value||null)}
-                      style={{fontSize:18,fontWeight:700,border:"1px solid #bbb",borderRadius:2,padding:"2px 6px",width:220}} />
-                  : <span style={{fontSize:18,fontWeight:700,color:"#111"}}>{r.owner_name}</span>
-                }
+                <input className="auto-input auto-input-lg" value={r.owner_name||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,owner_name:e.target.value}:x))}
+                  onBlur={e=>saveClientField("owner_name",e.target.value||null)} />
               </div>
-              <div style={{fontSize:13,color:"#333"}}>
-                <span style={{fontSize:11,color:"#888",marginRight:4}}>Address:</span>
-                {editing
-                  ? <input value={editData.address||""} onChange={e=>onClientChange("address",e.target.value||null)}
-                      style={{border:"1px solid #bbb",borderRadius:2,padding:"2px 6px",fontSize:13,width:260}} />
-                  : (r.address || <span style={{color:"#bbb"}}>&mdash;</span>)
-                }
+              <div style={{fontSize:15}}>
+                <span style={{fontSize:12,color:"#888",marginRight:4}}>Address:</span>
+                <input className="auto-input" style={{width:260}} value={r.address||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,address:e.target.value}:x))}
+                  onBlur={e=>saveClientField("address",e.target.value||null)} />
               </div>
             </div>
-            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:4, fontSize:13, color:"#333"}}>
+            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:4, fontSize:15}}>
               <span>
-                {editing
-                  ? <><span style={{fontSize:11,color:"#888"}}>Phone: </span><input value={editData.phone_primary||""} onChange={e=>onClientChange("phone_primary",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} /></>
-                  : fmtPhone(r.phone_primary) || ""
-                }
+                <span style={{fontSize:12,color:"#888"}}>Phone: </span>
+                <input className="auto-input" style={{width:120}} value={r.phone_primary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_primary:e.target.value}:x))}
+                  onBlur={e=>saveClientField("phone_primary",e.target.value||null)} />
               </span>
               <span>
-                {editing
-                  ? <><span style={{fontSize:11,color:"#888"}}>Phone 2: </span><input value={editData.phone_secondary||""} onChange={e=>onClientChange("phone_secondary",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} /></>
-                  : fmtPhone(r.phone_secondary) || ""
-                }
+                <span style={{fontSize:12,color:"#888"}}>Phone 2: </span>
+                <input className="auto-input" style={{width:120}} value={r.phone_secondary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_secondary:e.target.value}:x))}
+                  onBlur={e=>saveClientField("phone_secondary",e.target.value||null)} />
               </span>
             </div>
-            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:2, fontSize:13, color:"#333"}}>
+            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:2, fontSize:15}}>
               <span>
-                <span style={{fontSize:11,color:"#888"}}>Email: </span>
-                {editing
-                  ? <input value={editData.email||""} onChange={e=>onClientChange("email",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:180}} />
-                  : (r.email || "")
-                }
+                <span style={{fontSize:12,color:"#888"}}>Email: </span>
+                <input className="auto-input" style={{width:180}} value={r.email||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,email:e.target.value}:x))}
+                  onBlur={e=>saveClientField("email",e.target.value||null)} />
               </span>
               <span>
-                <span style={{fontSize:11,color:"#888"}}>Emg: </span>
-                {editing
-                  ? <input value={editData.emergency_contact||""} onChange={e=>onClientChange("emergency_contact",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} />
-                  : (r.emergency_contact || "")
-                }
+                <span style={{fontSize:12,color:"#888"}}>Emg: </span>
+                <input className="auto-input" style={{width:120}} value={r.emergency_contact||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,emergency_contact:e.target.value}:x))}
+                  onBlur={e=>saveClientField("emergency_contact",e.target.value||null)} />
               </span>
             </div>
           </div>
 
-          {/* ===== BOOKING ROWS (compact) ===== */}
-          <div style={{padding:"6px 12px", borderBottom:"1px solid #ccc", fontSize:13}}>
-            {/* Row 1: Date In, Time, # Days, Extras, Total, %Off, Balance */}
+          {/* ===== BOOKING ROWS (auto-save) ===== */}
+          <div style={{padding:"10px 20px", borderBottom:"1px solid #ccc", fontSize:15}}>
             <div style={{display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", marginBottom:4}}>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Date In:</span> {editing ? <DateInput value={editData.date_in} field="date_in" onChange={onClientChange} /> : (fmtDate(r.date_in) || <span style={{color:"#bbb"}}>&mdash;</span>)}</span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Time:</span> {editing ? <select value={editData.time_in||""} onChange={e=>onClientChange("time_in",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select> : <strong>{r.time_in || "--"}</strong>}</span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}># Days:</span> <strong>{r.num_days ?? "--"}</strong></span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>DC/Extras:</span> {editing ? <input type="number" step="0.01" value={editData.daycare_extra??""} onChange={e=>onClientChange("daycare_extra",e.target.value?Number(e.target.value):0)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:60}} /> : displayExtras||0}</span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Total:</span> <strong>{r.total != null ? r.total : "--"}</strong></span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>% Off:</span> {editing ? <select value={editData.percent_off??""} onChange={e=>onClientChange("percent_off",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{PERCENT_OFF_OPTIONS.map(o=><option key={o} value={o}>{o}%</option>)}</select> : (r.percent_off||0)+"%"}</span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Date In:</span> <DateInput value={r.date_in} onSave={v=>saveClientField("date_in",v)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Time:</span> <select className="auto-select" value={r.time_in||""} onChange={e=>saveClientField("time_in",e.target.value||null)}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}># Days:</span> <strong>{r.num_days ?? "--"}</strong></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>DC/Extras:</span> <input className="auto-input" type="number" step="0.01" style={{width:50}} value={r.daycare_extra??0} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,daycare_extra:Number(e.target.value)||0}:x))} onBlur={e=>saveClientField("daycare_extra",Number(e.target.value)||0)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Total:</span> <strong>{r.total != null ? r.total : "--"}</strong></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>% Off:</span> <select className="auto-select" value={r.percent_off??""} onChange={e=>saveClientField("percent_off",e.target.value?Number(e.target.value):null)}><option value="">--</option>{PERCENT_OFF_OPTIONS.map(o=><option key={o} value={o}>{o}%</option>)}</select></span>
               <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>${r.balance != null ? Number(r.balance).toFixed(0) : "--"}</span></span>
             </div>
-            {/* Row 2: Date Out, Time Out, Price, Cash, Down */}
             <div style={{display:"flex", alignItems:"center", gap:12, flexWrap:"wrap"}}>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Date Out:</span> {editing ? <DateInput value={editData.date_out} field="date_out" onChange={onClientChange} /> : (fmtDate(r.date_out) || <span style={{color:"#bbb"}}>&mdash;</span>)}</span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Time:</span> {editing ? <select value={editData.time_out||""} onChange={e=>onClientChange("time_out",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select> : <strong>{r.time_out || "--"}</strong>}</span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Price:</span> {editing ? <select value={editData.price_per_day??""} onChange={e=>onClientChange("price_per_day",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13}}><option value="">--</option>{PRICE_OPTIONS.map(o=><option key={o} value={o}>${o}</option>)}</select> : <strong>{r.price_per_day || "--"}</strong>}</span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Cash:</span> {editing ? <input type="number" step="0.01" value={editData.cash_discount??""} onChange={e=>onClientChange("cash_discount",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:60}} /> : (r.cash_discount||0)}</span>
-              <span><span className="lbl" style={{display:"inline",width:"auto",border:"none",padding:0,background:"none"}}>Down:</span> {editing ? <input type="number" step="0.01" value={editData.down_payment??""} onChange={e=>onClientChange("down_payment",e.target.value?Number(e.target.value):null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:60}} /> : (r.down_payment||0)}</span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Date Out:</span> <DateInput value={r.date_out} onSave={v=>saveClientField("date_out",v)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Time:</span> <select className="auto-select" value={r.time_out||""} onChange={e=>saveClientField("time_out",e.target.value||null)}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Price:</span> <select className="auto-select" value={r.price_per_day??""} onChange={e=>saveClientField("price_per_day",e.target.value?Number(e.target.value):null)}><option value="">--</option>{PRICE_OPTIONS.map(o=><option key={o} value={o}>${o}</option>)}</select></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Cash:</span> <input className="auto-input" type="number" step="0.01" style={{width:50}} value={r.cash_discount??0} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,cash_discount:Number(e.target.value)||0}:x))} onBlur={e=>saveClientField("cash_discount",Number(e.target.value)||0)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Down:</span> <input className="auto-input" type="number" step="0.01" style={{width:50}} value={r.down_payment??0} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,down_payment:Number(e.target.value)||0}:x))} onBlur={e=>saveClientField("down_payment",Number(e.target.value)||0)} /></span>
             </div>
-            {editing && (
-              <div style={{marginTop:4,fontSize:11,color:"#aaa",fontStyle:"italic"}}>
-                Total = (Days x Price + Extras) minus %Off &nbsp;|&nbsp; Balance = Total - Down - Cash
-              </div>
-            )}
+            {/* Waiver date */}
+            <div style={{display:"flex", alignItems:"center", gap:12, marginTop:4, flexWrap:"wrap"}}>
+              <span>
+                <span style={{fontSize:12,color:"#555",fontWeight:600}}>Waiver:</span>{" "}
+                <DateInput value={r.waiver_date} onSave={v=>saveClientField("waiver_date",v)} />
+                {r.waiver_date && <span className="vax-pill" style={{background:vaxStatus(r.waiver_date).bg, color:vaxStatus(r.waiver_date).color, marginLeft:4}}>{vaxStatus(r.waiver_date).label}</span>}
+              </span>
+              <span style={{fontSize:10,color:"#aaa",fontStyle:"italic"}}>
+                Total = (Days x Price + Extras) minus %Off | Balance = Total - Down - Cash
+              </span>
+            </div>
           </div>
 
           {/* ===== PET TABS ===== */}
           <div className="overflow-hidden">
-            <div className="flex items-center justify-between" style={{padding:"4px 12px", borderBottom:"1px solid #ccc"}}>
+            <div className="flex items-center justify-between" style={{padding:"8px 20px", borderBottom:"1px solid #ccc"}}>
               <span style={{fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:1}}>Pet</span>
               <div className="flex items-center gap-1">
-                {!editingPet ? (
-                  <>
-                    <button onClick={startPetEdit} disabled={!currentPet} className="px-2 py-0.5 rounded text-xs disabled:opacity-30" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Edit Pet</button>
-                    <button onClick={()=>setConfirmDeletePet(true)} disabled={!currentPet} className="px-2 py-0.5 rounded text-white text-xs disabled:opacity-30" style={{background:"#8B0000"}}>Delete Pet</button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={savePet} disabled={savingPet} className="px-2 py-0.5 rounded text-white text-xs" style={{background:"#2e7d32"}}>
-                      {savingPet?"Saving...":"Save Pet"}
-                    </button>
-                    <button onClick={cancelPetEdit} className="px-2 py-0.5 rounded text-xs" style={{background:"#ddd",color:"#333",border:"1px solid #aaa"}}>Cancel</button>
-                  </>
-                )}
+                <button onClick={()=>setConfirmDeletePet(true)} disabled={!currentPet} className="px-2 py-0.5 rounded text-white text-xs disabled:opacity-30" style={{background:"#8B0000"}}>Delete Pet</button>
               </div>
             </div>
 
-            {/* Pet tab buttons */}
             <div className="flex" style={{background:"#f0f0f0", borderBottom:"1px solid #ccc"}}>
               {pets.map((p, i) => (
-                <button key={p.id} onClick={() => { setPetIdx(i); setEditingPet(false); setEditPetData({}); }}
+                <button key={p.id} onClick={() => setPetIdx(i)}
                   style={{
                     padding:"8px 16px", fontSize:13, fontWeight:500, borderRight:"1px solid #ccc",
                     background: petIdx===i ? "#fff" : "#f0f0f0",
@@ -816,29 +769,21 @@ function RJPetsApp() {
             </div>
 
             {currentPet ? (
-              <div style={{padding:"8px 12px"}}>
-                {/* Pet name large + breed/vet/notes inline */}
+              <div style={{padding:"12px 20px"}}>
+                {/* Pet name + breed/vet/notes inline (auto-save) */}
                 <div style={{display:"flex", alignItems:"baseline", gap:16, flexWrap:"wrap", marginBottom:6}}>
                   <div>
-                    <span style={{fontSize:11,color:"#888"}}>Pet: </span>
-                    {editingPet
-                      ? <input value={editPetData.pet_name||""} onChange={e=>onPetChange("pet_name",e.target.value||null)} style={{fontSize:18,fontWeight:700,border:"1px solid #bbb",borderRadius:2,padding:"2px 6px",width:160}} />
-                      : <span style={{fontSize:18,fontWeight:700}}>{currentPet.pet_name}</span>
-                    }
+                    <span style={{fontSize:12,color:"#888"}}>Pet: </span>
+                    <input className="auto-input auto-input-lg" style={{width:160}} value={currentPet.pet_name||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,pet_name:e.target.value}:x))}
+                      onBlur={e=>savePetField("pet_name",e.target.value||null)} />
                   </div>
-                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span>{editingPet ? <input value={editPetData.breed||""} onChange={e=>onPetChange("breed",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:100}} /> : (currentPet.breed||"")}</span>
-                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>VET: </span>{editingPet ? <input value={editPetData.vet||""} onChange={e=>onPetChange("vet",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:100}} /> : (currentPet.vet||"")}</span>
-                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Notes: </span>{editingPet ? <input value={editPetData.notes||""} onChange={e=>onPetChange("notes",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:140}} /> : (currentPet.notes||"")}</span>
+                  <span style={{fontSize:13}}><span style={{fontSize:12,color:"#888"}}>Breed: </span><input className="auto-input" style={{width:100}} value={currentPet.breed||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,breed:e.target.value}:x))} onBlur={e=>savePetField("breed",e.target.value||null)} /></span>
+                  <span style={{fontSize:13}}><span style={{fontSize:12,color:"#888"}}>VET: </span><input className="auto-input" style={{width:100}} value={currentPet.vet||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,vet:e.target.value}:x))} onBlur={e=>savePetField("vet",e.target.value||null)} /></span>
+                  <span style={{fontSize:13}}><span style={{fontSize:12,color:"#888"}}>Notes: </span><input className="auto-input" style={{width:140}} value={currentPet.notes||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,notes:e.target.value}:x))} onBlur={e=>savePetField("notes",e.target.value||null)} /></span>
                 </div>
 
-                {/* Food / Feeding row */}
-                <div style={{display:"flex", gap:24, flexWrap:"wrap", marginBottom:4, fontSize:13}}>
-                  <span><span style={{fontSize:11,color:"#888"}}>Food: </span>{editingPet ? <input value={editPetData.food_brand||""} onChange={e=>onPetChange("food_brand",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:120}} /> : (currentPet.food_brand||"")}</span>
-                  <span><span style={{fontSize:11,color:"#888"}}>Feeding: </span>{editingPet ? <input value={editPetData.feeding_instructions||""} onChange={e=>onPetChange("feeding_instructions",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:200}} /> : (currentPet.feeding_instructions||"")}</span>
-                </div>
-
-                {/* Vaccines as horizontal row with colored blocks */}
-                <div style={{display:"flex", gap:12, flexWrap:"wrap", marginTop:6, fontSize:13, alignItems:"center"}}>
+                {/* Vaccines */}
+                <div style={{display:"flex", gap:12, flexWrap:"wrap", marginBottom:6, fontSize:13, alignItems:"center"}}>
                   {[
                     {label:"Dhrpp", field:"dhpp_date"},
                     {label:"Bord", field:"bordetella_exp"},
@@ -849,21 +794,37 @@ function RJPetsApp() {
                     const st = vaxStatus(date);
                     return (
                       <span key={v.field} style={{display:"inline-flex", alignItems:"center", gap:4}}>
-                        <span style={{fontSize:11,color:"#888"}}>{v.label}:</span>
-                        {editingPet
-                          ? <DateInput value={editPetData[v.field]} field={v.field} onChange={onPetChange} />
-                          : <span className="vax-pill" style={{background:st.bg, color:st.color}}>{fmtDate(date)||st.label}</span>
-                        }
+                        <span style={{fontSize:12,color:"#888"}}>{v.label}:</span>
+                        <DateInput value={date} onSave={val=>savePetField(v.field,val)} />
+                        <span className="vax-pill" style={{background:st.bg, color:st.color}}>{fmtDate(date)||st.label}</span>
                       </span>
                     );
                   })}
                 </div>
 
-                {/* Meds row */}
-                {(currentPet.medication_notes || editingPet) && (
-                  <div style={{marginTop:6, fontSize:13}}>
-                    <span style={{fontSize:11,color:"#888"}}>Meds: </span>
-                    {editingPet ? <input value={editPetData.medication_notes||""} onChange={e=>onPetChange("medication_notes",e.target.value||null)} style={{border:"1px solid #bbb",borderRadius:2,padding:"1px 4px",fontSize:13,width:"80%"}} /> : currentPet.medication_notes}
+                {/* Belongings + Blanket */}
+                <div style={{display:"flex", gap:16, flexWrap:"wrap", marginBottom:6, fontSize:15}}>
+                  <span><span style={{fontSize:12,color:"#888"}}>Belongings: </span><input className="auto-input" style={{width:200}} value={currentPet.pet_belongings||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,pet_belongings:e.target.value}:x))} onBlur={e=>savePetField("pet_belongings",e.target.value||"")} /></span>
+                  <span><span style={{fontSize:12,color:"#888"}}>Blanket: </span>
+                    <select className="auto-select" value={currentPet.blanket||"No"} onChange={e=>savePetField("blanket",e.target.value)}>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </span>
+                </div>
+
+                {/* Feeding AM/Noon/PM */}
+                <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:4}}>
+                  <FeedingSlot label="Feeding AM" pet={currentPet} prefix="feed_am" onSave={(f,v)=>savePetField(f,v)} />
+                  <FeedingSlot label="Feeding Noon" pet={currentPet} prefix="feed_noon" onSave={(f,v)=>savePetField(f,v)} />
+                  <FeedingSlot label="Feeding PM" pet={currentPet} prefix="feed_pm" onSave={(f,v)=>savePetField(f,v)} />
+                </div>
+
+                {/* Meds row (legacy - kept for existing data) */}
+                {currentPet.medication_notes && (
+                  <div style={{marginTop:4, fontSize:15}}>
+                    <span style={{fontSize:12,color:"#888"}}>Legacy Meds: </span>
+                    <input className="auto-input" style={{width:"80%"}} value={currentPet.medication_notes||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,medication_notes:e.target.value}:x))} onBlur={e=>savePetField("medication_notes",e.target.value||null)} />
                   </div>
                 )}
               </div>
@@ -874,7 +835,6 @@ function RJPetsApp() {
             )}
           </div>
 
-          {/* Footer with OWNER QUICK FIND hint */}
           <div className="flex items-center justify-between px-3 py-2" style={{borderTop:"1px solid #ccc", background:"#f5f5f5"}}>
             <span className="text-xs" style={{color:"#999"}}>Use &larr; &rarr; arrow keys to navigate</span>
             <span className="text-xs font-bold tracking-wide" style={{color:"#555"}}>OWNER QUICK FIND</span>
