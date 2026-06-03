@@ -23,17 +23,17 @@
     .fm-table .val { color: #111; }
     .fm-table .val-big { color: #111; font-size: 16px; font-weight: 700; }
     .vax-pill { display: inline-block; padding: 1px 8px; border-radius: 9999px; font-size: 10px; font-weight: 600; text-align: center; min-width: 65px; }
-    .auto-input { border: 1px solid transparent; border-radius: 2px; padding: 1px 4px; font-size: 13px; color: #111; background: transparent; transition: border-color 0.15s; }
+    .auto-input { border: 1px solid transparent; border-radius: 2px; padding: 2px 6px; font-size: 15px; color: #111; background: transparent; transition: border-color 0.15s; }
     .auto-input:hover { border-color: #ccc; }
     .auto-input:focus { border-color: #666; background: #fff; box-shadow: 0 0 0 1px #999; outline: none; }
-    .auto-input-lg { font-size: 18px; font-weight: 700; width: 220px; }
-    .auto-select { border: 1px solid transparent; border-radius: 2px; padding: 1px 4px; font-size: 13px; color: #111; background: transparent; }
+    .auto-input-lg { font-size: 22px; font-weight: 700; width: 280px; }
+    .auto-select { border: 1px solid transparent; border-radius: 2px; padding: 2px 6px; font-size: 15px; color: #111; background: transparent; }
     .auto-select:hover { border-color: #ccc; }
     .auto-select:focus { border-color: #666; background: #fff; outline: none; }
     .saved-flash { animation: flash-green 0.6s ease-out; }
     @keyframes flash-green { 0% { background: #c8e6c9; } 100% { background: transparent; } }
-    .feed-section { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 6px 8px; margin: 2px 0; }
-    .feed-label { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .feed-section { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 10px; margin: 3px 0; flex:1; min-width:220px; }
+    .feed-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
     @media print {
       body { background: white !important; margin: 0; }
       .no-print { display: none !important; }
@@ -185,6 +185,42 @@ const TIME_OPTIONS = ["AM", "PM"];
 const AMOUNT_OPTIONS = ["None","1/4","1/3","1/2","2/3","3/4","1","1 1/4","1 1/2","1 3/4","2","2 1/4","2 1/2","2 3/4","3","3 1/4","3 1/2","3 3/4","4","4 1/4","4 1/2","4 3/4","5"];
 const MED_AMOUNT_OPTIONS = ["None","1/4","1/3","1/2","2/3","3/4","1","1 1/4","1 1/2","1 3/4","2","2 1/4","2 1/2","2 3/4","3"];
 
+// ====== MONEY HELPERS ======
+const fmtMoney = (v) => {
+  const n = Number(v);
+  if (isNaN(n) || v === null || v === undefined) return "$0.00";
+  return "$" + n.toFixed(2);
+};
+
+// ====== MONEY INPUT (shows $X.00 on blur, raw number on focus) ======
+function MoneyInput({ value, onSave, style }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState("");
+  const numVal = Number(value) || 0;
+
+  const handleFocus = (e) => {
+    setEditing(true);
+    setText(numVal === 0 ? "" : String(numVal));
+    setTimeout(() => e.target.select(), 0);
+  };
+  const handleBlur = () => {
+    setEditing(false);
+    const n = Number(text) || 0;
+    if (n !== numVal) onSave(n);
+  };
+  return editing ? (
+    <input className="auto-input" type="number" step="0.01" style={{width:75,...(style||{})}}
+      value={text} onChange={e => setText(e.target.value)}
+      onBlur={handleBlur} onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }}
+      autoFocus />
+  ) : (
+    <span className="auto-input" style={{cursor:"text",display:"inline-block",minWidth:60,...(style||{})}}
+      onClick={handleFocus} tabIndex={0} onFocus={handleFocus}>
+      {fmtMoney(numVal)}
+    </span>
+  );
+}
+
 // ====== AUTO-SAVE DATE INPUT ======
 function DateInput({ value, onSave, className }) {
   const [text, setText] = useState(fmtDate(value) || "");
@@ -198,7 +234,7 @@ function DateInput({ value, onSave, className }) {
   return (
     <input type="text" value={text} onChange={e => setText(e.target.value)}
       onBlur={handleBlur} onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }}
-      placeholder="M/D/YYYY" className={className || "auto-input"} style={{width:90}} />
+      placeholder="M/D/YYYY" className={className || "auto-input"} style={{width:110}} />
   );
 }
 
@@ -215,13 +251,13 @@ function FeedingSlot({ label, pet, prefix, onSave }) {
       <div className="feed-label">{label}</div>
       <div style={{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", fontSize:12}}>
         <span><span style={{color:"#888",fontSize:10}}>Kibble:</span>
-          <select className="auto-select" style={{fontSize:12,width:60}} value={pet[kibbleField]||"None"}
+          <select className="auto-select" style={{fontSize:14,width:70}} value={pet[kibbleField]||"None"}
             onChange={e=>onSave(kibbleField,e.target.value)}>
             {AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
         </span>
         <span><span style={{color:"#888",fontSize:10}}>Wet:</span>
-          <select className="auto-select" style={{fontSize:12,width:60}} value={pet[wetField]||"None"}
+          <select className="auto-select" style={{fontSize:14,width:70}} value={pet[wetField]||"None"}
             onChange={e=>onSave(wetField,e.target.value)}>
             {AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
@@ -237,7 +273,7 @@ function FeedingSlot({ label, pet, prefix, onSave }) {
         <span><span style={{color:"#888",fontSize:10}}>Meds:</span>
           <input className="auto-input" style={{width:50,fontSize:12}} placeholder="name" value={pet[medsNameField]||""}
             onBlur={e=>onSave(medsNameField,e.target.value)} onChange={e=>e} maxLength={20} />
-          <select className="auto-select" style={{fontSize:12,width:55}} value={pet[medsAmtField]||"None"}
+          <select className="auto-select" style={{fontSize:14,width:65}} value={pet[medsAmtField]||"None"}
             onChange={e=>onSave(medsAmtField,e.target.value)}>
             {MED_AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
@@ -306,7 +342,7 @@ function CageCard({ client, pet, allPets, onClose }) {
 
             {/* Pet info compact */}
             <div style={{border:"1px solid #333",padding:4,marginBottom:6}}>
-              <div style={{fontWeight:"bold",fontSize:13}}>{pet.pet_name} — {pet.breed||""}</div>
+              <div style={{fontWeight:"bold",fontSize:16}}>{pet.pet_name} — {pet.breed||""}</div>
               <div style={{fontSize:9,display:"flex",gap:8,flexWrap:"wrap",marginTop:2}}>
                 <span>DHPP: {fmtDate(pet.dhpp_date)||"—"}</span>
                 <span>Bord: {fmtDate(pet.bordetella_exp)||"—"}</span>
@@ -667,70 +703,70 @@ function RJPetsApp() {
           No records. {query?"Try a different search.":"Click '+ New Record' to add one."}
         </div>
       ) : (
-        <div className="max-w-4xl mx-auto mt-4 px-4 pb-8 space-y-0 no-print" style={{background:"#fff", border:"1px solid #ccc", borderRadius:4}}>
+        <div className="mx-auto mt-4 px-4 pb-8 space-y-0 no-print" style={{background:"#fff", border:"1px solid #ccc", borderRadius:4, maxWidth:1200}}>
 
           {/* ===== OWNER ROW (auto-save) ===== */}
-          <div style={{padding:"10px 12px", borderBottom:"1px solid #ccc"}}>
+          <div style={{padding:"14px 20px", borderBottom:"1px solid #ccc"}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"baseline", flexWrap:"wrap", gap:4}}>
               <div>
-                <span style={{fontSize:11, color:"#888", marginRight:6}}>Owner:</span>
+                <span style={{fontSize:14, color:"#888", marginRight:6}}>Owner:</span>
                 <input className="auto-input auto-input-lg" value={r.owner_name||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,owner_name:e.target.value}:x))}
                   onBlur={e=>saveClientField("owner_name",e.target.value||null)} />
               </div>
-              <div style={{fontSize:13}}>
-                <span style={{fontSize:11,color:"#888",marginRight:4}}>Address:</span>
-                <input className="auto-input" style={{width:260}} value={r.address||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,address:e.target.value}:x))}
+              <div style={{fontSize:16}}>
+                <span style={{fontSize:14,color:"#888",marginRight:4}}>Address:</span>
+                <input className="auto-input" style={{width:400}} value={r.address||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,address:e.target.value}:x))}
                   onBlur={e=>saveClientField("address",e.target.value||null)} />
               </div>
             </div>
-            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:4, fontSize:13}}>
+            <div style={{display:"flex", gap:24, flexWrap:"wrap", marginTop:6, fontSize:16}}>
               <span>
-                <span style={{fontSize:11,color:"#888"}}>Phone: </span>
-                <input className="auto-input" style={{width:120}} value={r.phone_primary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_primary:e.target.value}:x))}
+                <span style={{fontSize:12,color:"#888"}}>Phone: </span>
+                <input className="auto-input" style={{width:260}} value={r.phone_primary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_primary:e.target.value}:x))}
                   onBlur={e=>saveClientField("phone_primary",e.target.value||null)} />
               </span>
               <span>
-                <span style={{fontSize:11,color:"#888"}}>Phone 2: </span>
-                <input className="auto-input" style={{width:120}} value={r.phone_secondary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_secondary:e.target.value}:x))}
+                <span style={{fontSize:12,color:"#888"}}>Phone 2: </span>
+                <input className="auto-input" style={{width:260}} value={r.phone_secondary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_secondary:e.target.value}:x))}
                   onBlur={e=>saveClientField("phone_secondary",e.target.value||null)} />
               </span>
             </div>
-            <div style={{display:"flex", gap:16, flexWrap:"wrap", marginTop:2, fontSize:13}}>
+            <div style={{display:"flex", gap:24, flexWrap:"wrap", marginTop:4, fontSize:16}}>
               <span>
-                <span style={{fontSize:11,color:"#888"}}>Email: </span>
-                <input className="auto-input" style={{width:180}} value={r.email||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,email:e.target.value}:x))}
+                <span style={{fontSize:12,color:"#888"}}>Email: </span>
+                <input className="auto-input" style={{width:300}} value={r.email||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,email:e.target.value}:x))}
                   onBlur={e=>saveClientField("email",e.target.value||null)} />
               </span>
               <span>
-                <span style={{fontSize:11,color:"#888"}}>Emg: </span>
-                <input className="auto-input" style={{width:120}} value={r.emergency_contact||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,emergency_contact:e.target.value}:x))}
+                <span style={{fontSize:12,color:"#888"}}>Emg: </span>
+                <input className="auto-input" style={{width:260}} value={r.emergency_contact||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,emergency_contact:e.target.value}:x))}
                   onBlur={e=>saveClientField("emergency_contact",e.target.value||null)} />
               </span>
             </div>
           </div>
 
           {/* ===== BOOKING ROWS (auto-save) ===== */}
-          <div style={{padding:"6px 12px", borderBottom:"1px solid #ccc", fontSize:13}}>
+          <div style={{padding:"10px 20px", borderBottom:"1px solid #ccc", fontSize:15}}>
             <div style={{display:"flex", alignItems:"center", gap:12, flexWrap:"wrap", marginBottom:4}}>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date In:</span> <DateInput value={r.date_in} onSave={v=>saveClientField("date_in",v)} /></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Time:</span> <select className="auto-select" value={r.time_in||""} onChange={e=>saveClientField("time_in",e.target.value||null)}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}># Days:</span> <strong>{r.num_days ?? "--"}</strong></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>DC/Extras:</span> <input className="auto-input" type="number" step="0.01" style={{width:50}} value={r.daycare_extra??0} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,daycare_extra:Number(e.target.value)||0}:x))} onBlur={e=>saveClientField("daycare_extra",Number(e.target.value)||0)} /></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Total:</span> <strong>{r.total != null ? r.total : "--"}</strong></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>% Off:</span> <select className="auto-select" value={r.percent_off??""} onChange={e=>saveClientField("percent_off",e.target.value?Number(e.target.value):null)}><option value="">--</option>{PERCENT_OFF_OPTIONS.map(o=><option key={o} value={o}>{o}%</option>)}</select></span>
-              <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>${r.balance != null ? Number(r.balance).toFixed(0) : "--"}</span></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Date In:</span> <DateInput value={r.date_in} onSave={v=>saveClientField("date_in",v)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Time:</span> <select className="auto-select" value={r.time_in||""} onChange={e=>saveClientField("time_in",e.target.value||null)}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}># Days:</span> <strong>{r.num_days ?? "--"}</strong></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>DC/Extras:</span> <MoneyInput value={r.daycare_extra} onSave={v=>saveClientField("daycare_extra",v)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Total:</span> <strong>{r.total != null ? fmtMoney(r.total) : "--"}</strong></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>% Off:</span> <select className="auto-select" value={r.percent_off??""} onChange={e=>saveClientField("percent_off",e.target.value?Number(e.target.value):null)}><option value="">--</option>{PERCENT_OFF_OPTIONS.map(o=><option key={o} value={o}>{o}%</option>)}</select></span>
+              <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>{r.balance != null ? fmtMoney(r.balance) : "--"}</span></span>
             </div>
             <div style={{display:"flex", alignItems:"center", gap:12, flexWrap:"wrap"}}>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date Out:</span> <DateInput value={r.date_out} onSave={v=>saveClientField("date_out",v)} /></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Time:</span> <select className="auto-select" value={r.time_out||""} onChange={e=>saveClientField("time_out",e.target.value||null)}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Price:</span> <select className="auto-select" value={r.price_per_day??""} onChange={e=>saveClientField("price_per_day",e.target.value?Number(e.target.value):null)}><option value="">--</option>{PRICE_OPTIONS.map(o=><option key={o} value={o}>${o}</option>)}</select></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Cash:</span> <input className="auto-input" type="number" step="0.01" style={{width:50}} value={r.cash_discount??0} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,cash_discount:Number(e.target.value)||0}:x))} onBlur={e=>saveClientField("cash_discount",Number(e.target.value)||0)} /></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Down:</span> <input className="auto-input" type="number" step="0.01" style={{width:50}} value={r.down_payment??0} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,down_payment:Number(e.target.value)||0}:x))} onBlur={e=>saveClientField("down_payment",Number(e.target.value)||0)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Date Out:</span> <DateInput value={r.date_out} onSave={v=>saveClientField("date_out",v)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Time:</span> <select className="auto-select" value={r.time_out||""} onChange={e=>saveClientField("time_out",e.target.value||null)}><option value="">--</option>{TIME_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}</select></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Price:</span> <select className="auto-select" value={r.price_per_day??""} onChange={e=>saveClientField("price_per_day",e.target.value?Number(e.target.value):null)}><option value="">--</option>{PRICE_OPTIONS.map(o=><option key={o} value={o}>${o}</option>)}</select></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Cash:</span> <MoneyInput value={r.cash_discount} onSave={v=>saveClientField("cash_discount",v)} /></span>
+              <span><span style={{fontSize:12,color:"#555",fontWeight:600}}>Down:</span> <MoneyInput value={r.down_payment} onSave={v=>saveClientField("down_payment",v)} /></span>
             </div>
             {/* Waiver date */}
             <div style={{display:"flex", alignItems:"center", gap:12, marginTop:4, flexWrap:"wrap"}}>
               <span>
-                <span style={{fontSize:11,color:"#555",fontWeight:600}}>Waiver:</span>{" "}
+                <span style={{fontSize:12,color:"#555",fontWeight:600}}>Waiver:</span>{" "}
                 <DateInput value={r.waiver_date} onSave={v=>saveClientField("waiver_date",v)} />
                 {r.waiver_date && <span className="vax-pill" style={{background:vaxStatus(r.waiver_date).bg, color:vaxStatus(r.waiver_date).color, marginLeft:4}}>{vaxStatus(r.waiver_date).label}</span>}
               </span>
@@ -742,8 +778,8 @@ function RJPetsApp() {
 
           {/* ===== PET TABS ===== */}
           <div className="overflow-hidden">
-            <div className="flex items-center justify-between" style={{padding:"4px 12px", borderBottom:"1px solid #ccc"}}>
-              <span style={{fontSize:11, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:1}}>Pet</span>
+            <div className="flex items-center justify-between" style={{padding:"8px 20px", borderBottom:"1px solid #ccc"}}>
+              <span style={{fontSize:13, fontWeight:700, color:"#888", textTransform:"uppercase", letterSpacing:1}}>Pet</span>
               <div className="flex items-center gap-1">
                 <button onClick={()=>setConfirmDeletePet(true)} disabled={!currentPet} className="px-2 py-0.5 rounded text-white text-xs disabled:opacity-30" style={{background:"#8B0000"}}>Delete Pet</button>
               </div>
@@ -753,7 +789,7 @@ function RJPetsApp() {
               {pets.map((p, i) => (
                 <button key={p.id} onClick={() => setPetIdx(i)}
                   style={{
-                    padding:"8px 16px", fontSize:13, fontWeight:500, borderRight:"1px solid #ccc",
+                    padding:"10px 20px", fontSize:15, fontWeight:500, borderRight:"1px solid #ccc",
                     background: petIdx===i ? "#fff" : "#f0f0f0",
                     color: petIdx===i ? "#111" : "#888",
                     borderBottom: petIdx===i ? "2px solid #8B0000" : "none"
@@ -762,28 +798,28 @@ function RJPetsApp() {
                 </button>
               ))}
               {pets.length < 5 && (
-                <button onClick={addPet} style={{padding:"8px 12px", fontSize:13, color:"#2e7d32", fontWeight:500, background:"transparent"}}>
+                <button onClick={addPet} style={{padding:"10px 16px", fontSize:15, color:"#2e7d32", fontWeight:500, background:"transparent"}}>
                   + Add Pet
                 </button>
               )}
             </div>
 
             {currentPet ? (
-              <div style={{padding:"8px 12px"}}>
+              <div style={{padding:"12px 20px"}}>
                 {/* Pet name + breed/vet/notes inline (auto-save) */}
-                <div style={{display:"flex", alignItems:"baseline", gap:16, flexWrap:"wrap", marginBottom:6}}>
+                <div style={{display:"flex", alignItems:"baseline", gap:24, flexWrap:"wrap", marginBottom:6}}>
                   <div>
-                    <span style={{fontSize:11,color:"#888"}}>Pet: </span>
-                    <input className="auto-input auto-input-lg" style={{width:160}} value={currentPet.pet_name||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,pet_name:e.target.value}:x))}
+                    <span style={{fontSize:12,color:"#888"}}>Pet: </span>
+                    <input className="auto-input auto-input-lg" style={{width:260}} value={currentPet.pet_name||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,pet_name:e.target.value}:x))}
                       onBlur={e=>savePetField("pet_name",e.target.value||null)} />
                   </div>
-                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span><input className="auto-input" style={{width:100}} value={currentPet.breed||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,breed:e.target.value}:x))} onBlur={e=>savePetField("breed",e.target.value||null)} /></span>
-                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>VET: </span><input className="auto-input" style={{width:100}} value={currentPet.vet||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,vet:e.target.value}:x))} onBlur={e=>savePetField("vet",e.target.value||null)} /></span>
-                  <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Notes: </span><input className="auto-input" style={{width:140}} value={currentPet.notes||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,notes:e.target.value}:x))} onBlur={e=>savePetField("notes",e.target.value||null)} /></span>
+                  <span style={{fontSize:16}}><span style={{fontSize:12,color:"#888"}}>Breed: </span><input className="auto-input" style={{width:180}} value={currentPet.breed||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,breed:e.target.value}:x))} onBlur={e=>savePetField("breed",e.target.value||null)} /></span>
+                  <span style={{fontSize:16}}><span style={{fontSize:12,color:"#888"}}>VET: </span><input className="auto-input" style={{width:180}} value={currentPet.vet||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,vet:e.target.value}:x))} onBlur={e=>savePetField("vet",e.target.value||null)} /></span>
+                  <span style={{fontSize:16}}><span style={{fontSize:12,color:"#888"}}>Notes: </span><input className="auto-input" style={{width:220}} value={currentPet.notes||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,notes:e.target.value}:x))} onBlur={e=>savePetField("notes",e.target.value||null)} /></span>
                 </div>
 
                 {/* Vaccines */}
-                <div style={{display:"flex", gap:12, flexWrap:"wrap", marginBottom:6, fontSize:13, alignItems:"center"}}>
+                <div style={{display:"flex", gap:16, flexWrap:"wrap", marginBottom:8, fontSize:16, alignItems:"center"}}>
                   {[
                     {label:"Dhrpp", field:"dhpp_date"},
                     {label:"Bord", field:"bordetella_exp"},
@@ -794,7 +830,7 @@ function RJPetsApp() {
                     const st = vaxStatus(date);
                     return (
                       <span key={v.field} style={{display:"inline-flex", alignItems:"center", gap:4}}>
-                        <span style={{fontSize:11,color:"#888"}}>{v.label}:</span>
+                        <span style={{fontSize:12,color:"#888"}}>{v.label}:</span>
                         <DateInput value={date} onSave={val=>savePetField(v.field,val)} />
                         <span className="vax-pill" style={{background:st.bg, color:st.color}}>{fmtDate(date)||st.label}</span>
                       </span>
@@ -803,9 +839,9 @@ function RJPetsApp() {
                 </div>
 
                 {/* Belongings + Blanket */}
-                <div style={{display:"flex", gap:16, flexWrap:"wrap", marginBottom:6, fontSize:13}}>
-                  <span><span style={{fontSize:11,color:"#888"}}>Belongings: </span><input className="auto-input" style={{width:200}} value={currentPet.pet_belongings||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,pet_belongings:e.target.value}:x))} onBlur={e=>savePetField("pet_belongings",e.target.value||"")} /></span>
-                  <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>
+                <div style={{display:"flex", gap:24, flexWrap:"wrap", marginBottom:6, fontSize:15}}>
+                  <span><span style={{fontSize:12,color:"#888"}}>Belongings: </span><input className="auto-input" style={{width:300}} value={currentPet.pet_belongings||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,pet_belongings:e.target.value}:x))} onBlur={e=>savePetField("pet_belongings",e.target.value||"")} /></span>
+                  <span><span style={{fontSize:12,color:"#888"}}>Blanket: </span>
                     <select className="auto-select" value={currentPet.blanket||"No"} onChange={e=>savePetField("blanket",e.target.value)}>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
@@ -822,8 +858,8 @@ function RJPetsApp() {
 
                 {/* Meds row (legacy - kept for existing data) */}
                 {currentPet.medication_notes && (
-                  <div style={{marginTop:4, fontSize:13}}>
-                    <span style={{fontSize:11,color:"#888"}}>Legacy Meds: </span>
+                  <div style={{marginTop:6, fontSize:16}}>
+                    <span style={{fontSize:12,color:"#888"}}>Legacy Meds: </span>
                     <input className="auto-input" style={{width:"80%"}} value={currentPet.medication_notes||""} onChange={e=>setPets(p=>p.map(x=>x.id===currentPet.id?{...x,medication_notes:e.target.value}:x))} onBlur={e=>savePetField("medication_notes",e.target.value||null)} />
                   </div>
                 )}
