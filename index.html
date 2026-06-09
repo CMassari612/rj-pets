@@ -240,41 +240,36 @@ function DateInput({ value, onSave, className }) {
 
 // ====== FEEDING SLOT COMPONENT ======
 function FeedingSlot({ label, pet, prefix, onSave }) {
-  const kibbleField = `${prefix}_kibble`;
-  const wetField = `${prefix}_wet`;
-  const toppingsField = `${prefix}_toppings`;
-  const medsNameField = `${prefix}_meds_name`;
-  const medsAmtField = `${prefix}_meds_amt`;
+  const kF = `${prefix}_kibble`, wF = `${prefix}_wet`, tF = `${prefix}_toppings`, mnF = `${prefix}_meds_name`, maF = `${prefix}_meds_amt`;
+  const [toppings, setToppings] = useState(pet[tF]||"");
+  const [medsName, setMedsName] = useState(pet[mnF]||"");
+  useEffect(()=>{ setToppings(pet[tF]||""); setMedsName(pet[mnF]||""); }, [pet[tF], pet[mnF]]);
 
   return (
     <div className="feed-section">
       <div className="feed-label">{label}</div>
       <div style={{display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", fontSize:12}}>
         <span><span style={{color:"#888",fontSize:10}}>Kibble:</span>
-          <select className="auto-select" style={{fontSize:14,width:70}} value={pet[kibbleField]||"None"}
-            onChange={e=>onSave(kibbleField,e.target.value)}>
+          <select className="auto-select" style={{fontSize:14,width:70}} value={pet[kF]||"None"}
+            onChange={e=>onSave(kF,e.target.value)}>
             {AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
         </span>
         <span><span style={{color:"#888",fontSize:10}}>Wet:</span>
-          <select className="auto-select" style={{fontSize:14,width:70}} value={pet[wetField]||"None"}
-            onChange={e=>onSave(wetField,e.target.value)}>
+          <select className="auto-select" style={{fontSize:14,width:70}} value={pet[wF]||"None"}
+            onChange={e=>onSave(wF,e.target.value)}>
             {AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
         </span>
         <span><span style={{color:"#888",fontSize:10}}>Toppings:</span>
-          <input className="auto-input" style={{width:80,fontSize:12}} value={pet[toppingsField]||""}
-            onBlur={e=>onSave(toppingsField,e.target.value)} onChange={e=>{
-              const el=e.target; const val=el.value;
-              // update local display immediately
-              el.dataset.pending=val;
-            }} defaultValue={pet[toppingsField]||""} maxLength={20} />
+          <input className="auto-input" style={{width:100,fontSize:12}} value={toppings}
+            onChange={e=>setToppings(e.target.value)} onBlur={e=>onSave(tF,e.target.value)} maxLength={20} />
         </span>
         <span><span style={{color:"#888",fontSize:10}}>Meds:</span>
-          <input className="auto-input" style={{width:50,fontSize:12}} placeholder="name" value={pet[medsNameField]||""}
-            onBlur={e=>onSave(medsNameField,e.target.value)} onChange={e=>e} maxLength={20} />
-          <select className="auto-select" style={{fontSize:14,width:65}} value={pet[medsAmtField]||"None"}
-            onChange={e=>onSave(medsAmtField,e.target.value)}>
+          <input className="auto-input" style={{width:60,fontSize:12}} placeholder="name" value={medsName}
+            onChange={e=>setMedsName(e.target.value)} onBlur={e=>onSave(mnF,e.target.value)} maxLength={20} />
+          <select className="auto-select" style={{fontSize:14,width:65}} value={pet[maF]||"None"}
+            onChange={e=>onSave(maF,e.target.value)}>
             {MED_AMOUNT_OPTIONS.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
         </span>
@@ -440,8 +435,9 @@ function RJPetsApp() {
       const price = updated.price_per_day || 0;
       const extras = (updated.daycare_extra || 0) + (updated.bath || 0);
       const pctOff = updated.percent_off || 0;
-      let subtotal = (days * price) + extras;
+      let subtotal = days * price;
       if (pctOff > 0) subtotal = subtotal * (1 - pctOff / 100);
+      subtotal += extras;
       updated.total = Math.round(subtotal * 100) / 100;
       updated.balance = Math.round((updated.total - (updated.down_payment||0) - (updated.cash_discount||0)) * 100) / 100;
     }
@@ -771,7 +767,7 @@ function RJPetsApp() {
                 {r.waiver_date && <span className="vax-pill" style={{background:vaxStatus(r.waiver_date).bg, color:vaxStatus(r.waiver_date).color, marginLeft:4}}>{vaxStatus(r.waiver_date).label}</span>}
               </span>
               <span style={{fontSize:10,color:"#aaa",fontStyle:"italic"}}>
-                Total = (Days x Price + Extras) minus %Off | Balance = Total - Down - Cash
+                Total = (Days x Price minus %Off) + Extras | Balance = Total - Down - Cash
               </span>
             </div>
           </div>
