@@ -37,11 +37,13 @@
     @media print {
       body { background: white !important; margin: 0; }
       .no-print { display: none !important; }
+      .cage-card-overlay { display: block !important; position: static !important; background: none !important; overflow: visible !important; padding: 0 !important; }
+      .cage-card-overlay > div { max-width: 100% !important; margin: 0 !important; }
       .print-only { display: block !important; }
-      .cage-card { page-break-inside: avoid; background: white !important; color: black !important; font-size: 11px; }
+      .cage-card { page-break-inside: avoid; background: white !important; color: black !important; font-size: 11px; max-width: 4in !important; margin: 0 !important; padding: 8px !important; border: 1px solid #333 !important; }
       .cage-card * { color: black !important; }
       .cage-card table { border-collapse: collapse; width: 100%; }
-      .cage-card td, .cage-card th { border: 1px solid #333; padding: 3px 6px; font-size: 10px; }
+      .cage-card td, .cage-card th { border: 1px solid #333; padding: 2px 4px; font-size: 9px; }
       .cage-card th { background: #eee !important; font-weight: bold; text-align: left; }
       .cage-page { page-break-after: always; }
       .cage-page:last-child { page-break-after: auto; }
@@ -280,7 +282,17 @@ function FeedingSlot({ label, pet, prefix, onSave }) {
 
 // ====== CAGE CARD (Redesigned - compact 4x8) ======
 function CageCard({ client, pet, allPets, onClose }) {
-  const print = () => { window.print(); };
+  const print = () => {
+    const cardHTML = document.querySelectorAll('.cage-card');
+    let html = '<html><head><title>Cage Card</title><style>body{margin:0;font-family:-apple-system,sans-serif;font-size:11px;}table{border-collapse:collapse;width:100%;}td,th{border:1px solid #333;padding:2px 4px;font-size:9px;}th{background:#eee;font-weight:bold;text-align:left;}.cage-card{max-width:4in;padding:8px;border:1px solid #333;margin:0 auto 12px;page-break-inside:avoid;page-break-after:always;}.cage-card:last-child{page-break-after:auto;}</style></head><body>';
+    cardHTML.forEach(c => { html += '<div class="cage-card">' + c.innerHTML + '</div>'; });
+    html += '</body></html>';
+    const w = window.open('', '_blank', 'width=500,height=700');
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
 
   // Calculate days array for feeding schedule
   const getDaysList = () => {
@@ -304,7 +316,7 @@ function CageCard({ client, pet, allPets, onClose }) {
   const fmtShort = (d) => `${d.getMonth()+1}/${d.getDate()}`;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center z-50 overflow-auto py-4 no-print" style={{zIndex:9999}}>
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center z-50 overflow-auto py-4 cage-card-overlay" style={{zIndex:9999}}>
       <div style={{maxWidth:500, width:"100%"}} className="mx-4">
         <div className="flex justify-between items-center mb-2 no-print">
           <h2 className="text-white text-lg font-bold">Cage Card Preview</h2>
