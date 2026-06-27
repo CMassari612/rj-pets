@@ -282,7 +282,7 @@ function CageCard({ client, pet, allPets, onClose }) {
     if (food && food !== "None") parts.push(food);
     if (toppings) parts.push("Toppings: " + toppings);
     if (medsName) parts.push("Meds: " + medsName + (medsAmt ? " " + medsAmt : ""));
-    return parts.join(" | ") || "â";
+    return parts.join(" | ") || "n/a";
   };
 
   const vaxSt = (date) => {
@@ -294,7 +294,7 @@ function CageCard({ client, pet, allPets, onClose }) {
   const print = () => {
     const card = document.getElementById('cage-card-content');
     if (!card) return;
-    let html = `<html><head><title>Cage Card - ${pet.pet_name}</title><style>
+    let html = `<html><head><meta charset="UTF-8"/><title>Cage Card - ${pet.pet_name}</title><style>
       *{margin:0;padding:0;box-sizing:border-box;}
       body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;font-size:13px;color:#111;}
       .section{border:1px solid #ccc;padding:10px 14px;margin-bottom:8px;border-radius:3px;}
@@ -337,11 +337,11 @@ function CageCard({ client, pet, allPets, onClose }) {
                 <span style={{fontSize:20,fontWeight:700}}>{client.owner_name}</span>
               </div>
               <div style={{fontSize:13}}>
-                <span style={{fontSize:11,color:"#555",fontWeight:600}}>Address: </span>{client.address||"â"}
+                <span style={{fontSize:11,color:"#555",fontWeight:600}}>Address: </span>{client.address||"n/a"}
               </div>
             </div>
             <div style={{display:"flex",gap:20,flexWrap:"wrap",marginTop:4,fontSize:13}}>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Phone: </span>{fmtPhone(client.phone_primary)||"â"}</span>
+              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Phone: </span>{fmtPhone(client.phone_primary)||"n/a"}</span>
               {client.phone_secondary && <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Phone 2: </span>{fmtPhone(client.phone_secondary)}</span>}
               {client.emergency_contact && <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Emg: </span>{client.emergency_contact}</span>}
             </div>
@@ -350,18 +350,18 @@ function CageCard({ client, pet, allPets, onClose }) {
           {/* Booking section */}
           <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
             <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:3,fontSize:13}}>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date In:</span> {fmtDate(client.date_in)||"â"} {client.time_in||""}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date Out:</span> {fmtDate(client.date_out)||"â"} {client.time_out||""}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}># Days:</span> <strong>{client.num_days ?? "â"}</strong></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Price:</span> {client.price_per_day ? "$"+client.price_per_day : "â"}</span>
+              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date In:</span> {fmtDate(client.date_in)||"n/a"} {client.time_in||""}</span>
+              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date Out:</span> {fmtDate(client.date_out)||"n/a"} {client.time_out||""}</span>
+              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}># Days:</span> <strong>{client.num_days ?? "n/a"}</strong></span>
+              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Price:</span> {client.price_per_day ? "$"+client.price_per_day : "n/a"}</span>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",fontSize:13}}>
               <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>DC/Extras:</span> {fmtMoney(client.daycare_extra)}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>% Off:</span> {client.percent_off ? client.percent_off+"%" : "â"}</span>
+              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>% Off:</span> {client.percent_off ? client.percent_off+"%" : "n/a"}</span>
               <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Cash:</span> {fmtMoney(client.cash_discount)}</span>
               <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Down:</span> {fmtMoney(client.down_payment)}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Total:</span> <strong>{client.total != null ? fmtMoney(client.total) : "â"}</strong></span>
-              <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>{client.balance != null ? fmtMoney(client.balance) : "â"}</span></span>
+              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Total:</span> <strong>{client.total != null ? fmtMoney(client.total) : "n/a"}</strong></span>
+              <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>{client.balance != null ? fmtMoney(client.balance) : "n/a"}</span></span>
             </div>
           </div>
 
@@ -369,8 +369,8 @@ function CageCard({ client, pet, allPets, onClose }) {
           <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
             <div style={{display:"flex",alignItems:"baseline",gap:20,flexWrap:"wrap",marginBottom:4}}>
               <span style={{fontSize:20,fontWeight:700}}>{pet.pet_name}</span>
-              <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span>{pet.breed||"â"}</span>
-              <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>VET: </span>{pet.vet||"â"}</span>
+              <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span>{pet.breed||"n/a"}</span>
+              <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>VET: </span>{pet.vet||"n/a"}</span>
               {pet.notes && <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Notes: </span>{pet.notes}</span>}
             </div>
 
@@ -382,7 +382,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                 return (
                   <span key={v.field} style={{display:"inline-flex",alignItems:"center",gap:3}}>
                     <span style={{fontSize:11,color:"#888"}}>{v.label}:</span>
-                    <span>{fmtDate(date)||"â"}</span>
+                    <span>{fmtDate(date)||"n/a"}</span>
                     {date && <span style={{display:"inline-block",padding:"1px 6px",borderRadius:9999,fontSize:9,fontWeight:600,background:expired?"#dc2626":"#16a34a",color:"white"}}>{expired?"EXP":"OK"}</span>}
                   </span>
                 );
@@ -391,7 +391,7 @@ function CageCard({ client, pet, allPets, onClose }) {
 
             {/* Belongings + Blanket */}
             <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:6,fontSize:13}}>
-              <span><span style={{fontSize:11,color:"#888"}}>Belongings: </span>{pet.pet_belongings||"â"}</span>
+              <span><span style={{fontSize:11,color:"#888"}}>Belongings: </span>{pet.pet_belongings||"n/a"}</span>
               <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>{pet.blanket||"No"}</span>
             </div>
 
