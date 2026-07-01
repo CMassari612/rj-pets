@@ -832,7 +832,10 @@ function RJPetsApp() {
             <div style={{display:"flex", alignItems:"center", gap:12, marginTop:4, flexWrap:"wrap"}}>
               <span>
                 <span style={{fontSize:12,color:"#555",fontWeight:600}}>Waiver:</span>{" "}
-                <DateInput value={r.waiver_date} onSave={v=>saveClientField("waiver_date",v)} />
+                <DateInput value={r.waiver_date} onSave={v=>{
+                  if(v){const d=new Date(v+"T00:00:00");d.setFullYear(d.getFullYear()+1);const exp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;saveClientField("waiver_date",exp);}
+                  else{saveClientField("waiver_date",null);}
+                }} />
                 {r.waiver_date && <span className="vax-pill" style={{background:vaxStatus(r.waiver_date).bg, color:vaxStatus(r.waiver_date).color, marginLeft:4}}>{vaxStatus(r.waiver_date).label}</span>}
               </span>
               <span style={{fontSize:10,color:"#aaa",fontStyle:"italic"}}>
