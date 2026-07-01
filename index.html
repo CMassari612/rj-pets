@@ -222,20 +222,18 @@ function MoneyInput({ value, onSave, style }) {
   );
 }
 
-// ====== AUTO-SAVE DATE INPUT ======
+// ====== AUTO-SAVE DATE INPUT (native calendar picker) ======
 function DateInput({ value, onSave, className }) {
-  const [text, setText] = useState(fmtDate(value) || "");
-  useEffect(() => { setText(fmtDate(value) || ""); }, [value]);
-  const handleBlur = () => {
-    if (!text.trim()) { if (value !== null) onSave(null); return; }
-    const iso = parseDate(text);
-    if (iso !== undefined && iso !== value) onSave(iso);
-    else if (iso === undefined) setText(fmtDate(value) || "");
+  const [val, setVal] = useState(value || "");
+  useEffect(() => { setVal(value || ""); }, [value]);
+  const handleChange = (e) => {
+    const v = e.target.value;
+    setVal(v);
+    onSave(v || null);
   };
   return (
-    <input type="text" value={text} onChange={e => setText(e.target.value)}
-      onBlur={handleBlur} onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }}
-      placeholder="M/D/YYYY" className={className || "auto-input"} style={{width:110}} />
+    <input type="date" value={val} onChange={handleChange}
+      className={className || "auto-input"} style={{width:140}} />
   );
 }
 
