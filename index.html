@@ -336,10 +336,10 @@ function CageCard({ client, pet, allPets, onClose }) {
             const startDate = client.date_in ? new Date(client.date_in + "T00:00:00") : null;
             const endDate = client.date_out ? new Date(client.date_out + "T00:00:00") : null;
             if (startDate && endDate && endDate > startDate) {
-              totalDays = Math.round((endDate - startDate) / (1000*60*60*24));
+              totalDays = Math.max(1, Math.round((endDate - startDate) / (1000*60*60*24)));
             }
             const DAYS_PER_PAGE = 7;
-            const totalPages = Math.ceil(totalDays / DAYS_PER_PAGE);
+            const totalPages = totalDays <= 7 ? 1 : Math.ceil(totalDays / DAYS_PER_PAGE);
 
             return Array.from({length: totalPages}, (_, pageIdx) => {
               const pageStart = pageIdx * DAYS_PER_PAGE;
@@ -435,7 +435,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                             <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>{dateLabel}</div>
                             {["feed_am","feed_pm"].map(prefix => {
                               const label = prefix === "feed_am" ? "AM" : "PM";
-                              const hasMeds = pet[`${prefix}_meds_name`];
+                              const hasMeds = pet.needs_meds && pet[`${prefix}_meds_name`];
                               return (
                                 <div key={prefix} style={{padding:"4px 6px",fontSize:10,textAlign:"left",borderBottom: prefix === "feed_am" ? "1px solid #ddd" : "none"}}>
                                   <div style={{fontSize:9,fontWeight:700,color:"#888",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>{label}</div>
