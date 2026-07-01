@@ -328,103 +328,118 @@ function CageCard({ client, pet, allPets, onClose }) {
           </div>
         </div>
 
-        <div id="cage-card-content" className="cage-card bg-white text-black rounded" style={{display:"block",padding:16}}>
-          {/* Owner section */}
-          <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:4}}>
-              <div>
-                <span style={{fontSize:12,color:"#888",marginRight:6}}>Owner:</span>
-                <span style={{fontSize:20,fontWeight:700}}>{client.owner_name}</span>
-              </div>
-              <div style={{fontSize:13}}>
-                <span style={{fontSize:11,color:"#555",fontWeight:600}}>Address: </span>{client.address||"n/a"}
-              </div>
-            </div>
-            <div style={{display:"flex",gap:20,flexWrap:"wrap",marginTop:4,fontSize:13}}>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Phone: </span>{fmtPhone(client.phone_primary)||"n/a"}</span>
-              {client.phone_secondary && <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Phone 2: </span>{fmtPhone(client.phone_secondary)}</span>}
-              {client.emergency_contact && <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Emg: </span>{client.emergency_contact}</span>}
-            </div>
-          </div>
+        <div id="cage-card-content">
+          {(() => {
+            const totalDays = Math.max(Number(client.num_days) || 1, 1);
+            const DAYS_PER_PAGE = 7;
+            const totalPages = Math.ceil(totalDays / DAYS_PER_PAGE);
+            const startDate = client.date_in ? new Date(client.date_in + "T00:00:00") : null;
 
-          {/* Booking section */}
-          <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:3,fontSize:13}}>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date In:</span> {fmtDate(client.date_in)||"n/a"} {client.time_in||""}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date Out:</span> {fmtDate(client.date_out)||"n/a"} {client.time_out||""}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}># Days:</span> <strong>{client.num_days ?? "n/a"}</strong></span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Price:</span> {client.price_per_day ? "$"+client.price_per_day : "n/a"}</span>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",fontSize:13}}>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>DC/Extras:</span> {fmtMoney(client.daycare_extra)}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>% Off:</span> {client.percent_off ? client.percent_off+"%" : "n/a"}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Cash:</span> {fmtMoney(client.cash_discount)}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Down:</span> {fmtMoney(client.down_payment)}</span>
-              <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Total:</span> <strong>{client.total != null ? fmtMoney(client.total) : "n/a"}</strong></span>
-              <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>{client.balance != null ? fmtMoney(client.balance) : "n/a"}</span></span>
-            </div>
-          </div>
+            return Array.from({length: totalPages}, (_, pageIdx) => {
+              const pageStart = pageIdx * DAYS_PER_PAGE;
+              const pageEnd = Math.min(pageStart + DAYS_PER_PAGE, totalDays);
+              const pageDays = pageEnd - pageStart;
 
-          {/* Pet section */}
-          <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
-            <div style={{display:"flex",alignItems:"baseline",gap:20,flexWrap:"wrap",marginBottom:4}}>
-              <span style={{fontSize:20,fontWeight:700}}>{pet.pet_name}</span>
-              <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span>{pet.breed||"n/a"}</span>
-              <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>VET: </span>{pet.vet||"n/a"}</span>
-              {pet.notes && <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Notes: </span>{pet.notes}</span>}
-            </div>
+              return (
+                <div key={pageIdx} className="cage-card cage-page bg-white text-black rounded" style={{display:"block",padding:16,marginBottom:totalPages>1?24:0}}>
+                  {/* Owner section */}
+                  <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:4}}>
+                      <div>
+                        <span style={{fontSize:12,color:"#888",marginRight:6}}>Owner:</span>
+                        <span style={{fontSize:20,fontWeight:700}}>{client.owner_name}</span>
+                      </div>
+                      <div style={{fontSize:13}}>
+                        <span style={{fontSize:11,color:"#555",fontWeight:600}}>Address: </span>{client.address||"n/a"}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:20,flexWrap:"wrap",marginTop:4,fontSize:13}}>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Phone: </span>{fmtPhone(client.phone_primary)||"n/a"}</span>
+                      {client.phone_secondary && <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Phone 2: </span>{fmtPhone(client.phone_secondary)}</span>}
+                      {client.emergency_contact && <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Emg: </span>{client.emergency_contact}</span>}
+                    </div>
+                  </div>
 
-            {/* Vaccines */}
-            <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:6,fontSize:13,alignItems:"center"}}>
-              {[{label:"Dhrpp",field:"dhpp_date"},{label:"Bord",field:"bordetella_exp"},{label:"Rabies",field:"rabies_exp"},{label:"FeLV",field:"felv_date"},{label:"Cat Rab",field:"cat_rabies_exp"}].map(v => {
-                const date = pet[v.field];
-                const expired = date ? new Date(date) < new Date() : false;
-                return (
-                  <span key={v.field} style={{display:"inline-flex",alignItems:"center",gap:3}}>
-                    <span style={{fontSize:11,color:"#888"}}>{v.label}:</span>
-                    <span>{fmtDate(date)||"n/a"}</span>
-                    {date && <span style={{display:"inline-block",padding:"1px 6px",borderRadius:9999,fontSize:9,fontWeight:600,background:expired?"#dc2626":"#16a34a",color:"white"}}>{expired?"EXP":"OK"}</span>}
-                  </span>
-                );
-              })}
-            </div>
+                  {/* Booking section */}
+                  <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:3,fontSize:13}}>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date In:</span> {fmtDate(client.date_in)||"n/a"} {client.time_in||""}</span>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date Out:</span> {fmtDate(client.date_out)||"n/a"} {client.time_out||""}</span>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}># Days:</span> <strong>{client.num_days ?? "n/a"}</strong></span>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Price:</span> {client.price_per_day ? "$"+client.price_per_day : "n/a"}</span>
+                      {totalPages > 1 && <span style={{fontSize:11,fontWeight:700,color:"#555",background:"#e8e8e8",padding:"2px 8px",borderRadius:4}}>Card {pageIdx+1} of {totalPages}</span>}
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",fontSize:13}}>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>DC/Extras:</span> {fmtMoney(client.daycare_extra)}</span>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>% Off:</span> {client.percent_off ? client.percent_off+"%" : "n/a"}</span>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Cash:</span> {fmtMoney(client.cash_discount)}</span>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Down:</span> {fmtMoney(client.down_payment)}</span>
+                      <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Total:</span> <strong>{client.total != null ? fmtMoney(client.total) : "n/a"}</strong></span>
+                      <span style={{fontWeight:700}}>Balance: <span style={{color:"#8B0000"}}>{client.balance != null ? fmtMoney(client.balance) : "n/a"}</span></span>
+                    </div>
+                  </div>
 
-            {/* Belongings + Blanket */}
-            <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:6,fontSize:13}}>
-              <span><span style={{fontSize:11,color:"#888"}}>Belongings: </span>{pet.pet_belongings||"n/a"}</span>
-              <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>{pet.blanket||"No"}</span>
-            </div>
+                  {/* Pet section */}
+                  <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
+                    <div style={{display:"flex",alignItems:"baseline",gap:20,flexWrap:"wrap",marginBottom:4}}>
+                      <span style={{fontSize:20,fontWeight:700}}>{pet.pet_name}</span>
+                      <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span>{pet.breed||"n/a"}</span>
+                      <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>VET: </span>{pet.vet||"n/a"}</span>
+                      {pet.notes && <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Notes: </span>{pet.notes}</span>}
+                    </div>
 
-            {/* Feeding AM / PM — one row per day of stay */}
-            {(() => {
-              const days = Math.max(Number(client.num_days) || 1, 1);
-              const startDate = client.date_in ? new Date(client.date_in + "T00:00:00") : null;
-              return Array.from({length: days}, (_, i) => {
-                let dateLabel = `Day ${i+1}`;
-                if (startDate) {
-                  const d = new Date(startDate);
-                  d.setDate(d.getDate() + i);
-                  dateLabel = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
-                }
-                return (
-                  <div key={i} style={{marginBottom:4}}>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {["feed_am","feed_pm"].map(prefix => {
-                        const label = prefix === "feed_am" ? "AM" : "PM";
+                    {/* Vaccines */}
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:6,fontSize:13,alignItems:"center"}}>
+                      {[{label:"Dhrpp",field:"dhpp_date"},{label:"Bord",field:"bordetella_exp"},{label:"Rabies",field:"rabies_exp"},{label:"FeLV",field:"felv_date"},{label:"Cat Rab",field:"cat_rabies_exp"}].map(v => {
+                        const date = pet[v.field];
+                        const expired = date ? new Date(date) < new Date() : false;
                         return (
-                          <div key={prefix} style={{background:"#fafafa",border:"1px solid #e0e0e0",borderRadius:3,padding:"6px 10px",flex:1,minWidth:200}}>
-                            <div style={{fontSize:10,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
-                            <div style={{fontSize:12}}>{fmtFeedLine(prefix)}</div>
-                          </div>
+                          <span key={v.field} style={{display:"inline-flex",alignItems:"center",gap:3}}>
+                            <span style={{fontSize:11,color:"#888"}}>{v.label}:</span>
+                            <span>{fmtDate(date)||"n/a"}</span>
+                            {date && <span style={{display:"inline-block",padding:"1px 6px",borderRadius:9999,fontSize:9,fontWeight:600,background:expired?"#dc2626":"#16a34a",color:"white"}}>{expired?"EXP":"OK"}</span>}
+                          </span>
                         );
                       })}
                     </div>
-                    <div style={{textAlign:"center",fontSize:10,color:"#888",marginTop:1}}>{dateLabel}</div>
+
+                    {/* Belongings + Blanket */}
+                    <div style={{display:"flex",gap:20,flexWrap:"wrap",marginBottom:6,fontSize:13}}>
+                      <span><span style={{fontSize:11,color:"#888"}}>Belongings: </span>{pet.pet_belongings||"n/a"}</span>
+                      <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>{pet.blanket||"No"}</span>
+                    </div>
+
+                    {/* Feeding AM / PM — days for this page */}
+                    {Array.from({length: pageDays}, (_, i) => {
+                      const dayNum = pageStart + i;
+                      let dateLabel = `Day ${dayNum+1}`;
+                      if (startDate) {
+                        const d = new Date(startDate);
+                        d.setDate(d.getDate() + dayNum);
+                        dateLabel = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+                      }
+                      return (
+                        <div key={dayNum} style={{marginBottom:4}}>
+                          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                            {["feed_am","feed_pm"].map(prefix => {
+                              const label = prefix === "feed_am" ? "AM" : "PM";
+                              return (
+                                <div key={prefix} style={{background:"#fafafa",border:"1px solid #e0e0e0",borderRadius:3,padding:"6px 10px",flex:1,minWidth:200}}>
+                                  <div style={{fontSize:10,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
+                                  <div style={{fontSize:12}}>{fmtFeedLine(prefix)}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{textAlign:"center",fontSize:10,color:"#888",marginTop:1}}>{dateLabel}</div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              });
-            })()}
-          </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
     </div>
