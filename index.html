@@ -293,12 +293,12 @@ function CageCard({ client, pet, allPets, onClose }) {
     const card = document.getElementById('cage-card-content');
     if (!card) return;
     let html = `<html><head><meta charset="UTF-8"/><title>Cage Card - ${pet.pet_name}</title><style>
-      @page{size:landscape;}
+      @page{size:landscape;margin:0.25in;}
       *{margin:0;padding:0;box-sizing:border-box;}
-      body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:12px;font-size:12px;color:#111;}
+      body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:6px;font-size:12px;color:#111;}
       .cage-page{page-break-after:always;}
       .cage-page:last-child{page-break-after:auto;}
-      .section{border:1px solid #ccc;padding:10px 14px;margin-bottom:8px;border-radius:3px;}
+      .section{border:1px solid #ccc;padding:8px 10px;margin-bottom:6px;border-radius:3px;}
       .section-title{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;}
       .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:3px;font-size:13px;}
       .lbl{font-size:11px;color:#555;font-weight:600;}
@@ -348,7 +348,7 @@ function CageCard({ client, pet, allPets, onClose }) {
               return (
                 <div key={pageIdx} className="cage-card cage-page bg-white text-black rounded" style={{display:"block",padding:16,marginBottom:totalPages>1?24:0}}>
                   {/* Owner section */}
-                  <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
+                  <div className="section" style={{border:"1px solid #ccc",padding:"8px 10px",marginBottom:6,borderRadius:3}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:4}}>
                       <div>
                         <span style={{fontSize:12,color:"#888",marginRight:6}}>Owner:</span>
@@ -366,7 +366,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                   </div>
 
                   {/* Booking section */}
-                  <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
+                  <div className="section" style={{border:"1px solid #ccc",padding:"8px 10px",marginBottom:6,borderRadius:3}}>
                     <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:3,fontSize:13}}>
                       <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date In:</span> {fmtDate(client.date_in)||"n/a"} {client.time_in||""}</span>
                       <span><span style={{fontSize:11,color:"#555",fontWeight:600}}>Date Out:</span> {fmtDate(client.date_out)||"n/a"} {client.time_out||""}</span>
@@ -385,7 +385,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                   </div>
 
                   {/* Pet section */}
-                  <div className="section" style={{border:"1px solid #ccc",padding:"10px 14px",marginBottom:8,borderRadius:3}}>
+                  <div className="section" style={{border:"1px solid #ccc",padding:"8px 10px",marginBottom:6,borderRadius:3}}>
                     <div style={{display:"flex",alignItems:"baseline",gap:20,flexWrap:"wrap",marginBottom:4}}>
                       <span style={{fontSize:20,fontWeight:700}}>{pet.pet_name}</span>
                       <span style={{fontSize:13}}><span style={{fontSize:11,color:"#888"}}>Breed: </span>{pet.breed||"n/a"}</span>
@@ -430,7 +430,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                         if (medSched === "every_other") { showMedsToday = (dayNum % 2 === 0); }
                         else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
                         return (
-                          <div key={dayNum} style={{flex:"1 1 0",minWidth:90,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
+                          <div key={dayNum} style={{flex:"1 1 0",minWidth:75,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
                             <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>{dateLabel}</div>
                             {["feed_am","feed_pm"].map(prefix => {
                               const label = prefix === "feed_am" ? "AM" : "PM";
