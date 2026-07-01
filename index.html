@@ -395,18 +395,35 @@ function CageCard({ client, pet, allPets, onClose }) {
               <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>{pet.blanket||"No"}</span>
             </div>
 
-            {/* Feeding AM / PM */}
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {["feed_am","feed_pm"].map(prefix => {
-                const label = prefix === "feed_am" ? "Feeding AM" : "Feeding PM";
+            {/* Feeding AM / PM — one row per day of stay */}
+            {(() => {
+              const days = Math.max(Number(client.num_days) || 1, 1);
+              const startDate = client.date_in ? new Date(client.date_in + "T00:00:00") : null;
+              return Array.from({length: days}, (_, i) => {
+                let dateLabel = `Day ${i+1}`;
+                if (startDate) {
+                  const d = new Date(startDate);
+                  d.setDate(d.getDate() + i);
+                  dateLabel = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+                }
                 return (
-                  <div key={prefix} style={{background:"#fafafa",border:"1px solid #e0e0e0",borderRadius:3,padding:"6px 10px",flex:1,minWidth:200}}>
-                    <div style={{fontSize:10,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
-                    <div style={{fontSize:12}}>{fmtFeedLine(prefix)}</div>
+                  <div key={i} style={{marginBottom:4}}>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {["feed_am","feed_pm"].map(prefix => {
+                        const label = prefix === "feed_am" ? "AM" : "PM";
+                        return (
+                          <div key={prefix} style={{background:"#fafafa",border:"1px solid #e0e0e0",borderRadius:3,padding:"6px 10px",flex:1,minWidth:200}}>
+                            <div style={{fontSize:10,fontWeight:700,color:"#888",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
+                            <div style={{fontSize:12}}>{fmtFeedLine(prefix)}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{textAlign:"center",fontSize:10,color:"#888",marginTop:1}}>{dateLabel}</div>
                   </div>
                 );
-              })}
-            </div>
+              });
+            })()}
           </div>
         </div>
       </div>
