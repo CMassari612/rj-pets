@@ -240,7 +240,7 @@ function DateInput({ value, onSave, className }) {
 }
 
 // ====== FEEDING SLOT COMPONENT (all text fields) ======
-function FeedingSlot({ label, pet, prefix, onSave }) {
+function FeedingSlot({ label, pet, prefix, onSave, showMeds = true }) {
   const foodF = `${prefix}_kibble`, tF = `${prefix}_toppings`, mnF = `${prefix}_meds_name`, maF = `${prefix}_meds_amt`;
   const [food, setFood] = useState(pet[foodF]||"");
   const [toppings, setToppings] = useState(pet[tF]||"");
@@ -260,12 +260,12 @@ function FeedingSlot({ label, pet, prefix, onSave }) {
           <input className="auto-input" style={{width:100,fontSize:12}} value={toppings}
             onChange={e=>setToppings(e.target.value)} onBlur={e=>onSave(tF,e.target.value)} />
         </span>
-        <span><span style={{color:"#888",fontSize:10}}>Meds:</span>
+        {showMeds && <span><span style={{color:"#888",fontSize:10}}>Meds:</span>
           <input className="auto-input" style={{width:80,fontSize:12}} placeholder="name" value={medsName}
             onChange={e=>setMedsName(e.target.value)} onBlur={e=>onSave(mnF,e.target.value)} />
           <input className="auto-input" style={{width:80,fontSize:12}} placeholder="e.g. 1/4 pill" value={medsAmt}
             onChange={e=>setMedsAmt(e.target.value)} onBlur={e=>onSave(maF,e.target.value)} />
-        </span>
+        </span>}
       </div>
     </div>
   );
@@ -868,10 +868,20 @@ function RJPetsApp() {
                   </span>
                 </div>
 
-                {/* Feeding AM/Noon/PM */}
+                {/* Feeding AM/PM + Needs Meds checkbox */}
+                <div style={{display:"flex", alignItems:"center", gap:12, marginBottom:4}}>
+                  <label style={{fontSize:12, color:"#555", cursor:"pointer", display:"flex", alignItems:"center", gap:4}}>
+                    <input type="checkbox" checked={!!currentPet.needs_meds} onChange={e=>{
+                      const val = e.target.checked;
+                      setPets(p=>p.map(x=>x.id===currentPet.id?{...x,needs_meds:val}:x));
+                      savePetField("needs_meds",val);
+                    }} />
+                    Needs Meds
+                  </label>
+                </div>
                 <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:4}}>
-                  <FeedingSlot label="Feeding AM" pet={currentPet} prefix="feed_am" onSave={(f,v)=>savePetField(f,v)} />
-                  <FeedingSlot label="Feeding PM" pet={currentPet} prefix="feed_pm" onSave={(f,v)=>savePetField(f,v)} />
+                  <FeedingSlot label="Feeding AM" pet={currentPet} prefix="feed_am" onSave={(f,v)=>savePetField(f,v)} showMeds={!!currentPet.needs_meds} />
+                  <FeedingSlot label="Feeding PM" pet={currentPet} prefix="feed_pm" onSave={(f,v)=>savePetField(f,v)} showMeds={!!currentPet.needs_meds} />
                 </div>
 
                 {/* Meds row (legacy - kept for existing data) */}
