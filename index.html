@@ -426,18 +426,25 @@ function CageCard({ client, pet, allPets, onClose }) {
                           d.setDate(d.getDate() + dayNum);
                           dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
                         }
+                        // Med schedule logic: determine if meds show on this day
+                        const medSched = pet.med_schedule || "daily";
+                        let showMedsToday = true;
+                        if (medSched === "every_other") { showMedsToday = (dayNum % 2 === 0); }
+                        else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
                         return (
                           <div key={dayNum} style={{flex:"1 1 0",minWidth:90,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
                             <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>{dateLabel}</div>
                             {["feed_am","feed_pm"].map(prefix => {
                               const label = prefix === "feed_am" ? "AM" : "PM";
+                              const hasMeds = pet[`${prefix}_meds_name`];
                               return (
                                 <div key={prefix} style={{padding:"4px 6px",fontSize:10,textAlign:"left",borderBottom: prefix === "feed_am" ? "1px solid #ddd" : "none"}}>
                                   <div style={{fontSize:9,fontWeight:700,color:"#888",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>{label}</div>
                                   {pet[`${prefix}_kibble`] && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet[`${prefix}_kibble`]}</div>}
                                   {pet[`${prefix}_toppings`] && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet[`${prefix}_toppings`]}</div>}
-                                  {pet[`${prefix}_meds_name`] && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet[`${prefix}_meds_name`]}{pet[`${prefix}_meds_amt`] ? ` ${pet[`${prefix}_meds_amt`]}` : ""}</div>}
-                                  {!pet[`${prefix}_kibble`] && !pet[`${prefix}_toppings`] && !pet[`${prefix}_meds_name`] && <div style={{color:"#aaa"}}>n/a</div>}
+                                  {hasMeds && showMedsToday && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet[`${prefix}_meds_name`]}{pet[`${prefix}_meds_amt`] ? ` ${pet[`${prefix}_meds_amt`]}` : ""}</div>}
+                                  {hasMeds && !showMedsToday && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
+                                  {!pet[`${prefix}_kibble`] && !pet[`${prefix}_toppings`] && !hasMeds && <div style={{color:"#aaa"}}>n/a</div>}
                                 </div>
                               );
                             })}
@@ -920,6 +927,20 @@ function RJPetsApp() {
                     }} />
                     Needs Meds
                   </label>
+                  {!!currentPet.needs_meds && (
+                    <span style={{display:"flex", alignItems:"center", gap:4}}>
+                      <span style={{fontSize:12, color:"#555", fontWeight:600}}>Schedule:</span>
+                      <select className="auto-select" style={{fontSize:12}} value={currentPet.med_schedule||"daily"} onChange={e=>{
+                        const val = e.target.value;
+                        setPets(p=>p.map(x=>x.id===currentPet.id?{...x,med_schedule:val}:x));
+                        savePetField("med_schedule",val);
+                      }}>
+                        <option value="daily">Daily</option>
+                        <option value="every_other">Every Other Day</option>
+                        <option value="2on_2off">2 On / 2 Off</option>
+                      </select>
+                    </span>
+                  )}
                 </div>
                 <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:4}}>
                   <FeedingSlot label="Feeding AM" pet={currentPet} prefix="feed_am" onSave={(f,v)=>savePetField(f,v)} showMeds={!!currentPet.needs_meds} />
