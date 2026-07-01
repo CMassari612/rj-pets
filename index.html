@@ -432,9 +432,12 @@ function CageCard({ client, pet, allPets, onClose }) {
                             {["feed_am","feed_pm"].map(prefix => {
                               const label = prefix === "feed_am" ? "AM" : "PM";
                               return (
-                                <div key={prefix} style={{background:"#fafafa",border:"1px solid #e0e0e0",borderRadius:3,padding:"4px 6px",marginBottom:2,fontSize:11}}>
-                                  <div style={{fontSize:9,fontWeight:700,color:"#888",textTransform:"uppercase"}}>{label}</div>
-                                  <div style={{fontSize:10}}>{fmtFeedLine(prefix)}</div>
+                                <div key={prefix} style={{background:"#fafafa",border:"1px solid #e0e0e0",borderRadius:3,padding:"4px 6px",marginBottom:2,fontSize:10,textAlign:"left"}}>
+                                  <div style={{fontSize:9,fontWeight:700,color:"#888",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>{label}</div>
+                                  {pet[`${prefix}_kibble`] && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet[`${prefix}_kibble`]}</div>}
+                                  {pet[`${prefix}_toppings`] && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet[`${prefix}_toppings`]}</div>}
+                                  {pet[`${prefix}_meds_name`] && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet[`${prefix}_meds_name`]}{pet[`${prefix}_meds_amt`] ? ` ${pet[`${prefix}_meds_amt`]}` : ""}</div>}
+                                  {!pet[`${prefix}_kibble`] && !pet[`${prefix}_toppings`] && !pet[`${prefix}_meds_name`] && <div style={{color:"#aaa"}}>n/a</div>}
                                 </div>
                               );
                             })}
