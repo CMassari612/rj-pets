@@ -142,7 +142,7 @@ const supabase = {
 const fmtPhone = (p) => {
   if (!p) return "";
   const d = p.replace(/\D/g,"");
-  return d.length===10 ? `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}` : p;
+  return d.length===10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : p;
 };
 const fmtDate = (d) => {
   if (!d) return "";
@@ -788,12 +788,12 @@ function RJPetsApp() {
               <span>
                 <span style={{fontSize:12,color:"#888"}}>Phone: </span>
                 <input className="auto-input" style={{width:260}} value={r.phone_primary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_primary:e.target.value}:x))}
-                  onBlur={e=>saveClientField("phone_primary",e.target.value||null)} />
+                  onBlur={e=>{const fmt=fmtPhone(e.target.value); setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_primary:fmt}:x)); saveClientField("phone_primary",fmt||null);}} />
               </span>
               <span>
                 <span style={{fontSize:12,color:"#888"}}>Phone 2: </span>
                 <input className="auto-input" style={{width:260}} value={r.phone_secondary||""} onChange={e=>setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_secondary:e.target.value}:x))}
-                  onBlur={e=>saveClientField("phone_secondary",e.target.value||null)} />
+                  onBlur={e=>{const fmt=fmtPhone(e.target.value); setRecords(p=>p.map(x=>x.id===r.id?{...x,phone_secondary:fmt}:x)); saveClientField("phone_secondary",fmt||null);}} />
               </span>
             </div>
             <div style={{display:"flex", gap:24, flexWrap:"wrap", marginTop:4, fontSize:16}}>
