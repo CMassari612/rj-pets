@@ -330,10 +330,14 @@ function CageCard({ client, pet, allPets, onClose }) {
 
         <div id="cage-card-content">
           {(() => {
-            const totalDays = Math.max(Number(client.num_days) || 1, 1);
+            let totalDays = Math.max(Number(client.num_days) || 1, 1);
+            const startDate = client.date_in ? new Date(client.date_in + "T00:00:00") : null;
+            const endDate = client.date_out ? new Date(client.date_out + "T00:00:00") : null;
+            if (startDate && endDate && endDate > startDate) {
+              totalDays = Math.round((endDate - startDate) / (1000*60*60*24));
+            }
             const DAYS_PER_PAGE = 7;
             const totalPages = Math.ceil(totalDays / DAYS_PER_PAGE);
-            const startDate = client.date_in ? new Date(client.date_in + "T00:00:00") : null;
 
             return Array.from({length: totalPages}, (_, pageIdx) => {
               const pageStart = pageIdx * DAYS_PER_PAGE;
