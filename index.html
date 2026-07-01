@@ -292,11 +292,10 @@ function CageCard({ client, pet, allPets, onClose }) {
   const print = () => {
     const card = document.getElementById('cage-card-content');
     if (!card) return;
-    let html = `<html><head><meta charset="UTF-8"/><title>Cage Card - ${pet.pet_name}</title><style>
+    let html = `<html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Cage Card - ${pet.pet_name}</title><style>
       @page{size:landscape;margin:0.25in;}
-      *{margin:0;padding:0;box-sizing:border-box;}
-      body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:6px;font-size:12px;color:#111;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-      *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+      *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+      body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:6px;font-size:12px;color:#111;}
       .cage-page{page-break-after:always;}
       .cage-page:last-child{page-break-after:auto;}
       .section{border:1px solid #ccc;padding:8px 10px;margin-bottom:6px;border-radius:3px;}
@@ -310,13 +309,13 @@ function CageCard({ client, pet, allPets, onClose }) {
       .feed-lbl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;}
     </style></head><body>`;
     html += card.innerHTML;
-    html += '<script>window.onload=function(){window.print();}<\/script></body></html>';
-    let iframe = document.getElementById('print-frame');
-    if (!iframe) { iframe = document.createElement('iframe'); iframe.id='print-frame'; iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1100px;height:800px;'; document.body.appendChild(iframe); }
-    iframe.contentDocument.open();
-    iframe.contentDocument.write(html);
-    iframe.contentDocument.close();
-    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 300);
+    html += '</body></html>';
+    const w = window.open('', '_blank');
+    if (!w) { alert('Please allow popups to print cage cards.'); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 600);
   };
 
   return (
