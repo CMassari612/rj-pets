@@ -395,7 +395,7 @@ function CageCard({ client, pet, allPets, onClose }) {
 
                     {/* Vaccines */}
                     <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:6,fontSize:13,alignItems:"center"}}>
-                      {[{label:"Dhrpp",field:"dhpp_date"},{label:"Bord",field:"bordetella_exp"},{label:"Rabies",field:"rabies_exp"},{label:"FeLV",field:"felv_date"},{label:"Cat Rab",field:"cat_rabies_exp"}].map(v => {
+                      {[{label:"Dhlpp",field:"dhpp_date"},{label:"Bord",field:"bordetella_exp"},{label:"Rabies",field:"rabies_exp"},{label:"FeLV",field:"felv_date"},{label:"Cat Rab",field:"cat_rabies_exp"}].map(v => {
                         const date = pet[v.field];
                         const expired = date ? new Date(date) < new Date() : false;
                         return (
@@ -889,7 +889,7 @@ function RJPetsApp() {
                 {/* Vaccines */}
                 <div style={{display:"flex", gap:16, flexWrap:"wrap", marginBottom:8, fontSize:16, alignItems:"center"}}>
                   {[
-                    {label:"Dhrpp", field:"dhpp_date"},
+                    {label:"Dhlpp", field:"dhpp_date"},
                     {label:"Bord", field:"bordetella_exp"},
                     {label:"Rabies", field:"rabies_exp"},
                     {label:"FeLV", field:"felv_date"},
