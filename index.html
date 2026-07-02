@@ -432,6 +432,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                         const hasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
                         const hasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
                         const hasMedsPM = pet.needs_meds && pet.feed_pm_meds_name;
+              const hasAnyMeds = hasMedsAM || hasMedsNoon || hasMedsPM;
                         return (
                           <div key={dayNum} style={{flex:"1 1 0",minWidth:80,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
                             {/* Date header */}
