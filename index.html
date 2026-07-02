@@ -478,13 +478,21 @@ function CageCard({ client, pet, allPets, onClose }) {
                       })}
                       {/* Date Out column */}
                       {pageIdx === totalPages - 1 && (
-                        <div style={{flex:"0 0 auto",minWidth:75,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden",background:"#fff8e1"}}>
-                          <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#ffe082",borderBottom:"1.5px solid #bbb"}}>
+                        <div style={{flex:"1 1 0",minWidth:80,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>
                             {endDate ? `${endDate.getMonth()+1}/${endDate.getDate()}` : "Out"}
                           </div>
-                          <div style={{padding:"8px 6px",fontSize:11,textAlign:"center",fontWeight:700,color:"#555"}}>
-                            <div style={{fontSize:10,fontWeight:700,color:"#888",textTransform:"uppercase",marginBottom:4}}>PICKUP</div>
-                            <div>{client.time_out || "TBD"}</div>
+                          <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
+                            <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>AM</div>
+                            <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                          </div>
+                          <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
+                            <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>NOON</div>
+                            <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                          </div>
+                          <div style={{padding:"4px 6px",fontSize:10,background:"#fff"}}>
+                            <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>PICKUP</div>
+                            <div style={{fontSize:10,textAlign:"center",fontWeight:700,color:"#555"}}>{client.time_out || "TBD"}</div>
                           </div>
                         </div>
                       )}
