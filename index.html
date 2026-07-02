@@ -398,7 +398,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                       </div>
                     </div>
 
-                    {/* MEDS CHART — date columns with AM/Noon/PM meds per time slot (only if pet has meds) */}
+                    {/* MEDS CHART — always AM/Noon/PM in every column, no pickup */}
                     {(() => {
                       const hasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
                       const hasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
@@ -406,16 +406,16 @@ function CageCard({ client, pet, allPets, onClose }) {
                       const hasAnyMeds = hasMedsAM || hasMedsNoon || hasMedsPM;
                       if (!hasAnyMeds) return null;
 
-                      const medSlots = [];
-                      if (hasMedsAM) medSlots.push({label:"AM", name: pet.feed_am_meds_name, amt: pet.feed_am_meds_amt});
-                      if (hasMedsNoon) medSlots.push({label:"Noon", name: pet.feed_noon_meds_name, amt: pet.feed_noon_meds_amt});
-                      if (hasMedsPM) medSlots.push({label:"PM", name: pet.feed_pm_meds_name, amt: pet.feed_pm_meds_amt});
+                      const allSlots = [
+                        {label:"AM", name: pet.feed_am_meds_name || "", amt: pet.feed_am_meds_amt || ""},
+                        {label:"Noon", name: pet.feed_noon_meds_name || "", amt: pet.feed_noon_meds_amt || ""},
+                        {label:"PM", name: pet.feed_pm_meds_name || "", amt: pet.feed_pm_meds_amt || ""}
+                      ];
 
                       const allMedCols = [];
                       for (let i = 0; i < totalDays; i++) {
-                        allMedCols.push({type: "day", dayNum: i});
+                        allMedCols.push(i);
                       }
-                      allMedCols.push({type: "pickup"});
                       const medRows = [];
                       for (let r = 0; r < allMedCols.length; r += DAYS_PER_ROW) {
                         medRows.push(allMedCols.slice(r, r + DAYS_PER_ROW));
@@ -426,11 +426,9 @@ function CageCard({ client, pet, allPets, onClose }) {
                           <div style={{fontSize:11,fontWeight:700,color:"#333",marginBottom:3}}>Medications</div>
                           {medRows.map((row, rowIdx) => (
                             <div key={rowIdx} style={{display:"flex",gap:6,flexWrap:"nowrap",marginTop:rowIdx===0?0:6}}>
-                              {row.map((col) => {
-                                const isPickup = col.type === "pickup";
-                                const dayNum = isPickup ? totalDays : col.dayNum;
-                                let dateLabel = isPickup ? (endDate ? `${endDate.getMonth()+1}/${endDate.getDate()} - Pickup` : "Pickup") : `Day ${dayNum+1}`;
-                                if (!isPickup && startDate) {
+                              {row.map((dayNum) => {
+                                let dateLabel = `Day ${dayNum+1}`;
+                                if (startDate) {
                                   const d = new Date(startDate);
                                   d.setDate(d.getDate() + dayNum);
                                   dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
@@ -441,19 +439,21 @@ function CageCard({ client, pet, allPets, onClose }) {
                                 else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
 
                                 return (
-                                  <div key={isPickup ? "pickup" : dayNum} style={{flex:"1 1 0",minWidth:80,maxWidth:`${100/DAYS_PER_ROW}%`,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
+                                  <div key={dayNum} style={{flex:"1 1 0",minWidth:80,maxWidth:`${100/DAYS_PER_ROW}%`,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
                                     <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>
                                       {dateLabel}
                                     </div>
-                                    {showMedsToday ? medSlots.map((slot, si) => (
-                                      <div key={slot.label} style={{padding:"4px 6px",fontSize:10,borderBottom: si < medSlots.length - 1 ? "1.5px solid #bbb" : "none",background:"#fff"}}>
+                                    {allSlots.map((slot, si) => (
+                                      <div key={slot.label} style={{padding:"4px 6px",fontSize:10,borderBottom: si < 2 ? "1.5px solid #bbb" : "none",background:"#fff"}}>
                                         <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",marginBottom:1}}>{slot.label}:</div>
-                                        <div style={{fontSize:9}}>{slot.name}{slot.amt ? ` ${slot.amt}` : ""}</div>
+                                        {showMedsToday && slot.name ? (
+                                          <div style={{fontSize:9}}>{slot.name}{slot.amt ? ` ${slot.amt}` : ""}</div>
+                                        ) : (
+                                          <div style={{fontSize:9,color:"#ccc"}}>&nbsp;</div>
+                                        )}
                                         <div style={{borderBottom:"1px solid #aaa",marginTop:3,minHeight:10}}>&nbsp;</div>
                                       </div>
-                                    )) : (
-                                      <div style={{padding:"6px",fontSize:9,color:"#bbb",fontStyle:"italic",textAlign:"center",background:"#fff"}}>off</div>
-                                    )}
+                                    ))}
                                   </div>
                                 );
                               })}
