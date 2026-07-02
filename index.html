@@ -439,7 +439,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                                 const medSched = pet.med_schedule || "daily";
                                 let showMedsToday = true;
                                 if (medSched === "every_other") { showMedsToday = (dayNum % 2 === 0); }
-                                else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
+                                else if (medSched === "every_other_2") { showMedsToday = (dayNum % 2 === 1); }
 
                                 return (
                                   <div key={dayNum} style={{flex:"0 0 auto",width:`calc((100% - ${(DAYS_PER_ROW-1)*6}px) / ${DAYS_PER_ROW})`,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
@@ -950,8 +950,8 @@ function RJPetsApp() {
                         savePetField("med_schedule",val);
                       }}>
                         <option value="daily">Daily</option>
-                        <option value="every_other">Every Other Day</option>
-                        <option value="2on_2off">2 On / 2 Off</option>
+                        <option value="every_other">Every Other Day - (Day 1)</option>
+                        <option value="every_other_2">Every Other Day - (Day 2)</option>
                       </select>
                     </span>
                   )}
