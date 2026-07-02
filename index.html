@@ -414,7 +414,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                       <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>{pet.blanket||"No"}</span>
                     </div>
 
-                    {/* Feeding AM / PM — days as columns going left to right */}
+                    {/* Feeding AM / Noon / PM / Meds — days as columns going left to right */}
                     <div style={{display:"flex",gap:6,flexWrap:"nowrap",overflowX:"auto",marginTop:6}}>
                       {Array.from({length: pageDays}, (_, i) => {
                         const dayNum = pageStart + i;
@@ -429,23 +429,50 @@ function CageCard({ client, pet, allPets, onClose }) {
                         let showMedsToday = true;
                         if (medSched === "every_other") { showMedsToday = (dayNum % 2 === 0); }
                         else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
+                        const hasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
+                        const hasMedsPM = pet.needs_meds && pet.feed_pm_meds_name;
+                        const hasAnyMeds = hasMedsAM || hasMedsPM;
                         return (
-                          <div key={dayNum} style={{flex:"1 1 0",minWidth:75,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
+                          <div key={dayNum} style={{flex:"1 1 0",minWidth:80,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
+                            {/* Date header */}
                             <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>{dateLabel}</div>
-                            {["feed_am","feed_pm"].map(prefix => {
-                              const label = prefix === "feed_am" ? "AM" : "PM";
-                              const hasMeds = pet.needs_meds && pet[`${prefix}_meds_name`];
-                              return (
-                                <div key={prefix} style={{padding:"4px 6px",fontSize:10,textAlign:"left",borderBottom: prefix === "feed_am" ? "1px solid #ddd" : "none"}}>
-                                  <div style={{fontSize:9,fontWeight:700,color:"#888",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>{label}</div>
-                                  {pet[`${prefix}_kibble`] && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet[`${prefix}_kibble`]}</div>}
-                                  {pet[`${prefix}_toppings`] && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet[`${prefix}_toppings`]}</div>}
-                                  {hasMeds && showMedsToday && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet[`${prefix}_meds_name`]}{pet[`${prefix}_meds_amt`] ? ` ${pet[`${prefix}_meds_amt`]}` : ""}</div>}
-                                  {hasMeds && !showMedsToday && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
-                                  {!pet[`${prefix}_kibble`] && !pet[`${prefix}_toppings`] && !hasMeds && <div style={{color:"#aaa"}}>n/a</div>}
-                                </div>
-                              );
-                            })}
+
+                            {/* AM box */}
+                            <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
+                              <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>AM</div>
+                              {pet.feed_am_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_am_kibble}</div>}
+                              {pet.feed_am_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_am_toppings}</div>}
+                              {!pet.feed_am_kibble && !pet.feed_am_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
+                            </div>
+
+                            {/* NOON box */}
+                            <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
+                              <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>NOON</div>
+                              <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                            </div>
+
+                            {/* PM box */}
+                            <div style={{padding:"4px 6px",fontSize:10,borderBottom: hasAnyMeds ? "1.5px solid #bbb" : "none",background:"#fff"}}>
+                              <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>PM</div>
+                              {pet.feed_pm_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_pm_kibble}</div>}
+                              {pet.feed_pm_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_pm_toppings}</div>}
+                              {!pet.feed_pm_kibble && !pet.feed_pm_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
+                            </div>
+
+                            {/* MEDS box */}
+                            {hasAnyMeds && (
+                              <div style={{padding:"4px 6px",fontSize:10,background:"#fef3c7"}}>
+                                <div style={{fontSize:9,fontWeight:700,color:"#92400e",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>MEDS</div>
+                                {showMedsToday ? (
+                                  <React.Fragment>
+                                    {hasMedsAM && <div style={{fontSize:9}}>{pet.feed_am_meds_name}{pet.feed_am_meds_amt ? ` ${pet.feed_am_meds_amt}` : ""}</div>}
+                                    {hasMedsPM && <div style={{fontSize:9}}>{pet.feed_pm_meds_name}{pet.feed_pm_meds_amt ? ` ${pet.feed_pm_meds_amt}` : ""}</div>}
+                                  </React.Fragment>
+                                ) : (
+                                  <div style={{color:"#bbb",fontSize:9,fontStyle:"italic",textAlign:"center"}}>off</div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
