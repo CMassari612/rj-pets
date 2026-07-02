@@ -35,16 +35,12 @@
     .feed-section { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 10px; margin: 3px 0; flex:1; min-width:220px; }
     .feed-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
     @media print {
-      body { background: white !important; margin: 0; }
+      @page { margin: 0.25in; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: white !important; margin: 0; padding: 0; font-size: 12px; color: #111; }
       .no-print { display: none !important; }
       .cage-card-overlay { display: block !important; position: static !important; background: none !important; overflow: visible !important; padding: 0 !important; }
       .cage-card-overlay > div { max-width: 100% !important; margin: 0 !important; }
-      .print-only { display: block !important; }
-      .cage-card { page-break-inside: avoid; background: white !important; color: black !important; font-size: 11px; max-width: 4in !important; margin: 0 !important; padding: 8px !important; border: 1px solid #333 !important; }
-      .cage-card * { color: black !important; }
-      .cage-card table { border-collapse: collapse; width: 100%; }
-      .cage-card td, .cage-card th { border: 1px solid #333; padding: 2px 4px; font-size: 9px; }
-      .cage-card th { background: #eee !important; font-weight: bold; text-align: left; }
       .cage-page { page-break-after: always; }
       .cage-page:last-child { page-break-after: auto; }
     }
@@ -290,32 +286,7 @@ function CageCard({ client, pet, allPets, onClose }) {
   };
 
   const print = () => {
-    const card = document.getElementById('cage-card-content');
-    if (!card) return;
-    let html = `<html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Cage Card - ${pet.pet_name}</title><style>
-      @page{margin:0.25in;}
-      *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-      body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:6px;font-size:12px;color:#111;}
-      .cage-page{page-break-after:always;}
-      .cage-page:last-child{page-break-after:auto;}
-      .section{border:1px solid #ccc;padding:8px 10px;margin-bottom:6px;border-radius:3px;}
-      .section-title{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;}
-      .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:3px;font-size:13px;}
-      .lbl{font-size:11px;color:#555;font-weight:600;}
-      .name{font-size:20px;font-weight:700;}
-      .vax-row{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;align-items:center;}
-      .vax-pill{display:inline-block;padding:1px 6px;border-radius:9999px;font-size:9px;font-weight:600;text-align:center;min-width:50px;}
-      .feed-box{background:#fafafa;border:1px solid #e0e0e0;border-radius:3px;padding:6px 10px;margin:2px 0;flex:1;min-width:200px;}
-      .feed-lbl{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;}
-    </style></head><body>`;
-    html += card.innerHTML;
-    html += '</body></html>';
-    const w = window.open('', '_blank');
-    if (!w) { alert('Please allow popups to print cage cards.'); return; }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => { w.focus(); w.print(); }, 600);
+    window.print();
   };
 
   return (
