@@ -35,15 +35,15 @@
     .feed-section { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 10px; margin: 3px 0; flex:1; min-width:220px; }
     .feed-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
     @media print {
-      @page { margin: 0.15in; size: auto; }
+      @page { margin: 0; size: auto; }
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-      body { background: white !important; margin: 0 !important; padding: 0 !important; font-size: 12px; color: #111; }
+      html, body { background: white !important; margin: 0 !important; padding: 0 !important; font-size: 12px; color: #111; width: 100% !important; height: auto !important; overflow: visible !important; }
       .no-print { display: none !important; }
-      .cage-card-overlay { display: block !important; position: static !important; background: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; }
-      .cage-card-overlay > div { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-      #cage-card-content { width: 100% !important; }
-      .cage-card { page-break-inside: avoid; width: 100% !important; padding: 8px !important; margin: 0 !important; }
-      .cage-card .section { margin-bottom: 4px !important; }
+      .cage-card-overlay { display: block !important; position: static !important; width: 100% !important; height: auto !important; background: white !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; inset: auto !important; top: auto !important; left: auto !important; right: auto !important; bottom: auto !important; }
+      .cage-card-overlay > div { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+      #cage-card-content { width: 100% !important; padding: 0 !important; margin: 0 !important; }
+      .cage-card { page-break-inside: avoid; width: 100% !important; padding: 4px !important; margin: 0 !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; }
+      .cage-card .section { margin-bottom: 2px !important; }
     }
   </style>
 </head>
