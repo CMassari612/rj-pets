@@ -430,8 +430,8 @@ function CageCard({ client, pet, allPets, onClose }) {
                         if (medSched === "every_other") { showMedsToday = (dayNum % 2 === 0); }
                         else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
                         const hasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
+                        const hasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
                         const hasMedsPM = pet.needs_meds && pet.feed_pm_meds_name;
-                        const hasAnyMeds = hasMedsAM || hasMedsPM;
                         return (
                           <div key={dayNum} style={{flex:"1 1 0",minWidth:80,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
                             {/* Date header */}
@@ -442,60 +442,69 @@ function CageCard({ client, pet, allPets, onClose }) {
                               <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>AM</div>
                               {pet.feed_am_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_am_kibble}</div>}
                               {pet.feed_am_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_am_toppings}</div>}
-                              {!pet.feed_am_kibble && !pet.feed_am_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
+                              {hasMedsAM && showMedsToday && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet.feed_am_meds_name}{pet.feed_am_meds_amt ? ` ${pet.feed_am_meds_amt}` : ""}</div>}
+                              {hasMedsAM && !showMedsToday && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
+                              {!pet.feed_am_kibble && !pet.feed_am_toppings && !hasMedsAM && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                             </div>
 
                             {/* NOON box */}
                             <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
                               <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>NOON</div>
-                              <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                              {pet.feed_noon_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_noon_kibble}</div>}
+                              {pet.feed_noon_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_noon_toppings}</div>}
+                              {hasMedsNoon && showMedsToday && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet.feed_noon_meds_name}{pet.feed_noon_meds_amt ? ` ${pet.feed_noon_meds_amt}` : ""}</div>}
+                              {hasMedsNoon && !showMedsToday && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
+                              {!pet.feed_noon_kibble && !pet.feed_noon_toppings && !hasMedsNoon && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                             </div>
 
                             {/* PM box */}
-                            <div style={{padding:"4px 6px",fontSize:10,borderBottom: hasAnyMeds ? "1.5px solid #bbb" : "none",background:"#fff"}}>
+                            <div style={{padding:"4px 6px",fontSize:10,background:"#fff"}}>
                               <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>PM</div>
                               {pet.feed_pm_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_pm_kibble}</div>}
                               {pet.feed_pm_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_pm_toppings}</div>}
-                              {!pet.feed_pm_kibble && !pet.feed_pm_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
+                              {hasMedsPM && showMedsToday && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet.feed_pm_meds_name}{pet.feed_pm_meds_amt ? ` ${pet.feed_pm_meds_amt}` : ""}</div>}
+                              {hasMedsPM && !showMedsToday && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
+                              {!pet.feed_pm_kibble && !pet.feed_pm_toppings && !hasMedsPM && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                             </div>
-
-                            {/* MEDS box */}
-                            {hasAnyMeds && (
-                              <div style={{padding:"4px 6px",fontSize:10,background:"#fef3c7"}}>
-                                <div style={{fontSize:9,fontWeight:700,color:"#92400e",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>MEDS</div>
-                                {showMedsToday ? (
-                                  <React.Fragment>
-                                    {hasMedsAM && <div style={{fontSize:9}}>{pet.feed_am_meds_name}{pet.feed_am_meds_amt ? ` ${pet.feed_am_meds_amt}` : ""}</div>}
-                                    {hasMedsPM && <div style={{fontSize:9}}>{pet.feed_pm_meds_name}{pet.feed_pm_meds_amt ? ` ${pet.feed_pm_meds_amt}` : ""}</div>}
-                                  </React.Fragment>
-                                ) : (
-                                  <div style={{color:"#bbb",fontSize:9,fontStyle:"italic",textAlign:"center"}}>off</div>
-                                )}
-                              </div>
-                            )}
                           </div>
                         );
                       })}
                       {/* Date Out column */}
-                      {pageIdx === totalPages - 1 && (
+                      {pageIdx === totalPages - 1 && (() => {
+                        const outDayNum = totalDays;
+                        const outMedSched = pet.med_schedule || "daily";
+                        let outShowMeds = true;
+                        if (outMedSched === "every_other") { outShowMeds = (outDayNum % 2 === 0); }
+                        else if (outMedSched === "2on_2off") { outShowMeds = (outDayNum % 4 < 2); }
+                        const outHasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
+                        const outHasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
+                        const outHasMedsPM = pet.needs_meds && pet.feed_pm_meds_name;
+                        return (
                         <div style={{flex:"1 1 0",minWidth:80,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
                           <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>
                             {endDate ? `${endDate.getMonth()+1}/${endDate.getDate()}` : "Out"}
                           </div>
                           <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
                             <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>AM</div>
-                            <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                            {outHasMedsAM && outShowMeds && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet.feed_am_meds_name}{pet.feed_am_meds_amt ? ` ${pet.feed_am_meds_amt}` : ""}</div>}
+                            {outHasMedsAM && !outShowMeds && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
+                            {!outHasMedsAM && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                           </div>
                           <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
                             <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>NOON</div>
-                            <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                            {outHasMedsNoon && outShowMeds && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet.feed_noon_meds_name}{pet.feed_noon_meds_amt ? ` ${pet.feed_noon_meds_amt}` : ""}</div>}
+                            {outHasMedsNoon && !outShowMeds && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
+                            {!outHasMedsNoon && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                           </div>
                           <div style={{padding:"4px 6px",fontSize:10,background:"#fff"}}>
                             <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>PICKUP</div>
                             <div style={{fontSize:10,textAlign:"center",fontWeight:700,color:"#555"}}>{client.time_out || "TBD"}</div>
+                            {outHasMedsPM && outShowMeds && <div><span style={{color:"#888",fontSize:9}}>Meds: </span>{pet.feed_pm_meds_name}{pet.feed_pm_meds_amt ? ` ${pet.feed_pm_meds_amt}` : ""}</div>}
+                            {outHasMedsPM && !outShowMeds && <div style={{color:"#bbb",fontSize:9,fontStyle:"italic"}}>Meds: off</div>}
                           </div>
                         </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -650,6 +659,7 @@ function RJPetsApp() {
       medication_notes: "", feeding_instructions: "", food_brand: "", notes: "", note_date: null,
       pet_belongings: "", blanket: "No",
       feed_am_kibble: "", feed_am_wet: "", feed_am_toppings: "", feed_am_meds_name: "", feed_am_meds_amt: "",
+      feed_noon_kibble: "", feed_noon_toppings: "", feed_noon_meds_name: "", feed_noon_meds_amt: "",
       feed_pm_kibble: "", feed_pm_wet: "", feed_pm_toppings: "", feed_pm_meds_name: "", feed_pm_meds_amt: "",
     };
     try {
@@ -992,6 +1002,7 @@ function RJPetsApp() {
                 </div>
                 <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:4}}>
                   <FeedingSlot label="Feeding AM" pet={currentPet} prefix="feed_am" onSave={(f,v)=>savePetField(f,v)} showMeds={!!currentPet.needs_meds} />
+                  <FeedingSlot label="Feeding Noon" pet={currentPet} prefix="feed_noon" onSave={(f,v)=>savePetField(f,v)} showMeds={!!currentPet.needs_meds} />
                   <FeedingSlot label="Feeding PM" pet={currentPet} prefix="feed_pm" onSave={(f,v)=>savePetField(f,v)} showMeds={!!currentPet.needs_meds} />
                 </div>
 
