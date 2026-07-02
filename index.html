@@ -379,137 +379,94 @@ function CageCard({ client, pet, allPets, onClose }) {
                       <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>{pet.blanket||"No"}</span>
                     </div>
 
-                    {/* Feeding days in rows of 7 */}
+                    {/* FEEDING CHART — static AM / Noon / PM table */}
+                    <div style={{marginTop:6,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>Feeding</div>
+                      <div style={{display:"flex"}}>
+                        {[
+                          {label:"AM", food: pet.feed_am_kibble, top: pet.feed_am_toppings},
+                          {label:"NOON", food: pet.feed_noon_kibble, top: pet.feed_noon_toppings},
+                          {label:"PM", food: pet.feed_pm_kibble, top: pet.feed_pm_toppings}
+                        ].map((meal, idx) => (
+                          <div key={meal.label} style={{flex:"1 1 0",padding:"6px 8px",fontSize:11,borderRight: idx < 2 ? "1.5px solid #bbb" : "none",background:"#fff"}}>
+                            <div style={{fontSize:10,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:2}}>{meal.label}</div>
+                            {meal.food && <div><span style={{color:"#888",fontSize:10}}>Food: </span>{meal.food}</div>}
+                            {meal.top && <div><span style={{color:"#888",fontSize:10}}>Toppings: </span>{meal.top}</div>}
+                            {!meal.food && !meal.top && <div style={{color:"#ccc",textAlign:"center"}}>&mdash;</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* MEDS CHART — date columns with meds + AM/Noon/PM checkoff (only if pet has meds) */}
                     {(() => {
-                      const allDayColumns = [];
+                      const hasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
+                      const hasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
+                      const hasMedsPM = pet.needs_meds && pet.feed_pm_meds_name;
+                      const hasAnyMeds = hasMedsAM || hasMedsNoon || hasMedsPM;
+                      if (!hasAnyMeds) return null;
+
+                      const allMedCols = [];
                       for (let i = 0; i < totalDays; i++) {
-                        allDayColumns.push({type: "day", dayNum: i});
+                        allMedCols.push({type: "day", dayNum: i});
                       }
-                      allDayColumns.push({type: "pickup"});
-                      const rows = [];
-                      for (let r = 0; r < allDayColumns.length; r += DAYS_PER_ROW) {
-                        rows.push(allDayColumns.slice(r, r + DAYS_PER_ROW));
+                      allMedCols.push({type: "pickup"});
+                      const medRows = [];
+                      for (let r = 0; r < allMedCols.length; r += DAYS_PER_ROW) {
+                        medRows.push(allMedCols.slice(r, r + DAYS_PER_ROW));
                       }
-                      return rows.map((row, rowIdx) => (
-                        <div key={rowIdx} style={{display:"flex",gap:6,flexWrap:"nowrap",marginTop:rowIdx===0?6:8}}>
-                          {row.map((col) => {
-                            if (col.type === "pickup") {
-                              return (() => {
-                                const outDayNum = totalDays;
-                                const outMedSched = pet.med_schedule || "daily";
-                                let outShowMeds = true;
-                                if (outMedSched === "every_other") { outShowMeds = (outDayNum % 2 === 0); }
-                                else if (outMedSched === "2on_2off") { outShowMeds = (outDayNum % 4 < 2); }
-                                const outHasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
-                                const outHasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
-                                const outHasMedsPM = pet.needs_meds && pet.feed_pm_meds_name;
-                                const outHasAnyMeds = outHasMedsAM || outHasMedsNoon || outHasMedsPM;
+
+                      return (
+                        <div style={{marginTop:8}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#92400e",marginBottom:3}}>Medications</div>
+                          {medRows.map((row, rowIdx) => (
+                            <div key={rowIdx} style={{display:"flex",gap:6,flexWrap:"nowrap",marginTop:rowIdx===0?0:6}}>
+                              {row.map((col) => {
+                                const isPickup = col.type === "pickup";
+                                const dayNum = isPickup ? totalDays : col.dayNum;
+                                let dateLabel = isPickup ? (endDate ? `${endDate.getMonth()+1}/${endDate.getDate()}` : "Pickup") : `Day ${dayNum+1}`;
+                                if (!isPickup && startDate) {
+                                  const d = new Date(startDate);
+                                  d.setDate(d.getDate() + dayNum);
+                                  dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
+                                }
+                                const medSched = pet.med_schedule || "daily";
+                                let showMedsToday = true;
+                                if (medSched === "every_other") { showMedsToday = (dayNum % 2 === 0); }
+                                else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
+
                                 return (
-                                <div key="pickup" style={{flex:"1 1 0",minWidth:80,maxWidth:`${100/DAYS_PER_ROW}%`,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
-                                  <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>
-                                    {endDate ? `${endDate.getMonth()+1}/${endDate.getDate()} - Pickup` : "Pickup"}
-                                  </div>
-                                  <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
-                                    <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>AM</div>
-                                    {pet.feed_am_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_am_kibble}</div>}
-                                    {pet.feed_am_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_am_toppings}</div>}
-                                    {!pet.feed_am_kibble && !pet.feed_am_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
-                                  </div>
-                                  <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
-                                    <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>NOON</div>
-                                    {pet.feed_noon_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_noon_kibble}</div>}
-                                    {pet.feed_noon_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_noon_toppings}</div>}
-                                    {!pet.feed_noon_kibble && !pet.feed_noon_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
-                                  </div>
-                                  <div style={{padding:"4px 6px",fontSize:10,borderBottom: outHasAnyMeds ? "1.5px solid #bbb" : "none",background:"#fff"}}>
-                                    <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>PM</div>
-                                    {pet.feed_pm_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_pm_kibble}</div>}
-                                    {pet.feed_pm_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_pm_toppings}</div>}
-                                    {!pet.feed_pm_kibble && !pet.feed_pm_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
-                                  </div>
-                                  {outHasAnyMeds && (
-                                    <div style={{padding:"4px 6px",fontSize:10,background:"#fef3c7"}}>
+                                  <div key={isPickup ? "pickup" : dayNum} style={{flex:"1 1 0",minWidth:80,maxWidth:`${100/DAYS_PER_ROW}%`,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
+                                    <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:isPickup?"#d4edda":"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>
+                                      {dateLabel}{isPickup ? " - PU" : ""}
+                                    </div>
+                                    <div style={{padding:"4px 6px",fontSize:10,background:"#fef3c7",borderBottom:"1.5px solid #bbb"}}>
                                       <div style={{fontSize:9,fontWeight:700,color:"#92400e",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>MEDS</div>
-                                      {outShowMeds ? (
+                                      {showMedsToday ? (
                                         <React.Fragment>
-                                          {outHasMedsAM && <div style={{fontSize:9}}>{pet.feed_am_meds_name}{pet.feed_am_meds_amt ? ` ${pet.feed_am_meds_amt}` : ""}</div>}
-                                          {outHasMedsNoon && <div style={{fontSize:9}}>{pet.feed_noon_meds_name}{pet.feed_noon_meds_amt ? ` ${pet.feed_noon_meds_amt}` : ""}</div>}
-                                          {outHasMedsPM && <div style={{fontSize:9}}>{pet.feed_pm_meds_name}{pet.feed_pm_meds_amt ? ` ${pet.feed_pm_meds_amt}` : ""}</div>}
+                                          {hasMedsAM && <div style={{fontSize:9}}>{pet.feed_am_meds_name}{pet.feed_am_meds_amt ? ` ${pet.feed_am_meds_amt}` : ""}</div>}
+                                          {hasMedsNoon && <div style={{fontSize:9}}>{pet.feed_noon_meds_name}{pet.feed_noon_meds_amt ? ` ${pet.feed_noon_meds_amt}` : ""}</div>}
+                                          {hasMedsPM && <div style={{fontSize:9}}>{pet.feed_pm_meds_name}{pet.feed_pm_meds_amt ? ` ${pet.feed_pm_meds_amt}` : ""}</div>}
                                         </React.Fragment>
                                       ) : (
                                         <div style={{color:"#bbb",fontSize:9,fontStyle:"italic",textAlign:"center"}}>off</div>
                                       )}
                                     </div>
-                                  )}
-                                </div>
+                                    <div style={{fontSize:10,background:"#fff"}}>
+                                      {["AM","Noon","PM"].map((t, ti) => (
+                                        <div key={t} style={{padding:"3px 6px",borderBottom: ti < 2 ? "1px solid #ddd" : "none",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                          <span style={{fontSize:9,fontWeight:600,color:"#555"}}>{t}:</span>
+                                          <span style={{borderBottom:"1px solid #aaa",flex:1,marginLeft:4,minHeight:12}}>&nbsp;</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
                                 );
-                              })();
-                            }
-                            const dayNum = col.dayNum;
-                        let dateLabel = `Day ${dayNum+1}`;
-                        if (startDate) {
-                          const d = new Date(startDate);
-                          d.setDate(d.getDate() + dayNum);
-                          dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
-                        }
-                        // Med schedule logic: determine if meds show on this day
-                        const medSched = pet.med_schedule || "daily";
-                        let showMedsToday = true;
-                        if (medSched === "every_other") { showMedsToday = (dayNum % 2 === 0); }
-                        else if (medSched === "2on_2off") { showMedsToday = (dayNum % 4 < 2); }
-                        const hasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
-                        const hasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
-                        const hasMedsPM = pet.needs_meds && pet.feed_pm_meds_name;
-              const hasAnyMeds = hasMedsAM || hasMedsNoon || hasMedsPM;
-                        return (
-                          <div key={dayNum} style={{flex:"1 1 0",minWidth:80,maxWidth:`${100/DAYS_PER_ROW}%`,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
-                            {/* Date header */}
-                            <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>{dateLabel}</div>
-
-                            {/* AM box */}
-                            <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
-                              <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>AM</div>
-                              {pet.feed_am_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_am_kibble}</div>}
-                              {pet.feed_am_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_am_toppings}</div>}
-                              {!pet.feed_am_kibble && !pet.feed_am_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
+                              })}
                             </div>
-
-                            {/* NOON box */}
-                            <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
-                              <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>NOON</div>
-                              {pet.feed_noon_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_noon_kibble}</div>}
-                              {pet.feed_noon_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_noon_toppings}</div>}
-                              {!pet.feed_noon_kibble && !pet.feed_noon_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
-                            </div>
-
-                            {/* PM box */}
-                            <div style={{padding:"4px 6px",fontSize:10,borderBottom: hasAnyMeds ? "1.5px solid #bbb" : "none",background:"#fff"}}>
-                              <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>PM</div>
-                              {pet.feed_pm_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_pm_kibble}</div>}
-                              {pet.feed_pm_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_pm_toppings}</div>}
-                              {!pet.feed_pm_kibble && !pet.feed_pm_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
-                            </div>
-
-                            {/* MEDS box */}
-                            {hasAnyMeds && (
-                              <div style={{padding:"4px 6px",fontSize:10,background:"#fef3c7"}}>
-                                <div style={{fontSize:9,fontWeight:700,color:"#92400e",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>MEDS</div>
-                                {showMedsToday ? (
-                                  <React.Fragment>
-                                    {hasMedsAM && <div style={{fontSize:9}}>{pet.feed_am_meds_name}{pet.feed_am_meds_amt ? ` ${pet.feed_am_meds_amt}` : ""}</div>}
-                                    {hasMedsNoon && <div style={{fontSize:9}}>{pet.feed_noon_meds_name}{pet.feed_noon_meds_amt ? ` ${pet.feed_noon_meds_amt}` : ""}</div>}
-                                    {hasMedsPM && <div style={{fontSize:9}}>{pet.feed_pm_meds_name}{pet.feed_pm_meds_amt ? ` ${pet.feed_pm_meds_amt}` : ""}</div>}
-                                  </React.Fragment>
-                                ) : (
-                                  <div style={{color:"#bbb",fontSize:9,fontStyle:"italic",textAlign:"center"}}>off</div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                      ));
+                          ))}
+                        </div>
+                      );
                     })()}
                   </div>
                 </div>
