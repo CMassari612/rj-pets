@@ -498,15 +498,21 @@ function CageCard({ client, pet, allPets, onClose }) {
                           </div>
                           <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
                             <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>AM</div>
-                            <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                            {pet.feed_am_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_am_kibble}</div>}
+                            {pet.feed_am_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_am_toppings}</div>}
+                            {!pet.feed_am_kibble && !pet.feed_am_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                           </div>
                           <div style={{padding:"4px 6px",fontSize:10,borderBottom:"1.5px solid #bbb",background:"#fff"}}>
                             <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>NOON</div>
-                            <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                            {pet.feed_noon_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_noon_kibble}</div>}
+                            {pet.feed_noon_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_noon_toppings}</div>}
+                            {!pet.feed_noon_kibble && !pet.feed_noon_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                           </div>
                           <div style={{padding:"4px 6px",fontSize:10,borderBottom: outHasAnyMeds ? "1.5px solid #bbb" : "none",background:"#fff"}}>
                             <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",textAlign:"center",marginBottom:1}}>PM</div>
-                            <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>
+                            {pet.feed_pm_kibble && <div><span style={{color:"#888",fontSize:9}}>Food: </span>{pet.feed_pm_kibble}</div>}
+                            {pet.feed_pm_toppings && <div><span style={{color:"#888",fontSize:9}}>Top: </span>{pet.feed_pm_toppings}</div>}
+                            {!pet.feed_pm_kibble && !pet.feed_pm_toppings && <div style={{color:"#ccc",minHeight:16}}>&nbsp;</div>}
                           </div>
                           {outHasAnyMeds && (
                             <div style={{padding:"4px 6px",fontSize:10,background:"#fef3c7"}}>
