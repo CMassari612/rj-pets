@@ -398,7 +398,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                       </div>
                     </div>
 
-                    {/* MEDS CHART — always AM/Noon/PM in every column, no pickup */}
+                    {/* MEDS CHART — AM/Noon/PM per day + pickup day, no underlines */}
                     {(() => {
                       const hasMedsAM = pet.needs_meds && pet.feed_am_meds_name;
                       const hasMedsNoon = pet.needs_meds && pet.feed_noon_meds_name;
@@ -413,7 +413,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                       ];
 
                       const allMedCols = [];
-                      for (let i = 0; i < totalDays; i++) {
+                      for (let i = 0; i <= totalDays; i++) {
                         allMedCols.push(i);
                       }
                       const medRows = [];
@@ -427,8 +427,11 @@ function CageCard({ client, pet, allPets, onClose }) {
                           {medRows.map((row, rowIdx) => (
                             <div key={rowIdx} style={{display:"flex",gap:6,flexWrap:"nowrap",marginTop:rowIdx===0?0:6}}>
                               {row.map((dayNum) => {
+                                const isPickup = dayNum === totalDays;
                                 let dateLabel = `Day ${dayNum+1}`;
-                                if (startDate) {
+                                if (isPickup) {
+                                  dateLabel = endDate ? `${endDate.getMonth()+1}/${endDate.getDate()}` : `Day ${dayNum+1}`;
+                                } else if (startDate) {
                                   const d = new Date(startDate);
                                   d.setDate(d.getDate() + dayNum);
                                   dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
@@ -444,14 +447,13 @@ function CageCard({ client, pet, allPets, onClose }) {
                                       {dateLabel}
                                     </div>
                                     {allSlots.map((slot, si) => (
-                                      <div key={slot.label} style={{padding:"4px 6px",fontSize:10,borderBottom: si < 2 ? "1.5px solid #bbb" : "none",background:"#fff"}}>
-                                        <div style={{fontSize:9,fontWeight:700,color:"#555",textTransform:"uppercase",marginBottom:1}}>{slot.label}:</div>
+                                      <div key={slot.label} style={{padding:"5px 6px",fontSize:10,borderBottom: si < 2 ? "1.5px solid #bbb" : "none",background:"#fff",minHeight:36}}>
+                                        <div style={{fontSize:10,fontWeight:700,color:"#555",textTransform:"uppercase",marginBottom:2}}>{slot.label}:</div>
                                         {showMedsToday && slot.name ? (
-                                          <div style={{fontSize:9}}>{slot.name}{slot.amt ? ` ${slot.amt}` : ""}</div>
+                                          <div style={{fontSize:12,fontWeight:600}}>{slot.name}{slot.amt ? ` ${slot.amt}` : ""}</div>
                                         ) : (
-                                          <div style={{fontSize:9,color:"#ccc"}}>&nbsp;</div>
+                                          <div style={{fontSize:12,color:"#ccc"}}>&nbsp;</div>
                                         )}
-                                        <div style={{borderBottom:"1px solid #aaa",marginTop:3,minHeight:10}}>&nbsp;</div>
                                       </div>
                                     ))}
                                   </div>
