@@ -64,6 +64,28 @@ const { useState, useEffect, useCallback, useRef } = React;
 const SUPABASE_URL = "https://moxjbswcfwtamivwkdlr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1veGpic3djZnd0YW1pdndrZGxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNjY0MzUsImV4cCI6MjA5MTg0MjQzNX0.fEaXWdO8AH7jxlhC24DmGofdXeS0TkDOC5kHPi6jY48";
 
+
+// Retry wrapper — retries transient failures (timeouts, 5xx, network errors)
+const fetchWithRetry = async (url, options, retries = 2, okStatuses = [200]) => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (okStatuses.includes(res.status) || res.ok) return res;
+      if (res.status >= 500 && attempt < retries) {
+        await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+        continue;
+      }
+      return res; // return non-retryable errors as-is
+    } catch (e) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+        continue;
+      }
+      throw e;
+    }
+  }
+};
+
 const supabase = {
   async _fetchPage(table, { order, from, to, search, filters }) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
@@ -71,7 +93,7 @@ const supabase = {
     if (search) url.searchParams.set("or",
       `(owner_name.ilike.%${search}%,phone_primary.ilike.%${search}%,phone_secondary.ilike.%${search}%,email.ilike.%${search}%,address.ilike.%${search}%)`);
     if (filters) Object.entries(filters).forEach(([k,v]) => url.searchParams.set(k, v));
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -79,7 +101,7 @@ const supabase = {
         Range: `${from}-${to}`,
         "Range-Unit": "items",
       },
-    });
+    }, 2, [200, 206]);
     if (!res.ok && res.status !== 206) throw new Error(await res.text());
     const cr = res.headers.get("content-range") || "";
     const count = cr.split("/")[1];
@@ -91,10 +113,10 @@ const supabase = {
     url.searchParams.set("order", "id.asc");
     if (search) url.searchParams.set("or",
       `(owner_name.ilike.%${search}%,phone_primary.ilike.%${search}%,phone_secondary.ilike.%${search}%,email.ilike.%${search}%,address.ilike.%${search}%)`);
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         Prefer: "count=exact", Range: "0-0", "Range-Unit": "items" },
-    });
+    }, 2, [200, 206, 416]);
     if (!res.ok && res.status !== 206 && res.status !== 416) throw new Error(await res.text());
     const cr = res.headers.get("content-range") || "";
     const count = cr.split("/")[1];
@@ -103,10 +125,10 @@ const supabase = {
   async getOne(table, { offset = 0 } = {}) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
     url.searchParams.set("order", "id.asc");
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         Prefer: "count=exact", Range: `${offset}-${offset}`, "Range-Unit": "items" },
-    });
+    }, 2, [200, 206]);
     if (!res.ok && res.status !== 206) throw new Error(await res.text());
     const data = await res.json();
     return data[0] || null;
@@ -114,7 +136,7 @@ const supabase = {
   async getById(table, id) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
     url.searchParams.set("id", `eq.${id}`);
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
     if (!res.ok) throw new Error(await res.text());
@@ -127,7 +149,7 @@ const supabase = {
     url.searchParams.set("order", "id.asc");
     url.searchParams.set("or",
       `(owner_name.ilike.%${search}%,phone_primary.ilike.%${search}%,phone_secondary.ilike.%${search}%,email.ilike.%${search}%,address.ilike.%${search}%)`);
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
     if (!res.ok) throw new Error(await res.text());
@@ -137,7 +159,7 @@ const supabase = {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
     url.searchParams.set("order", `${order}.asc`);
     Object.entries(filters).forEach(([k,v]) => url.searchParams.set(k, v));
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
     if (!res.ok) throw new Error(await res.text());
@@ -146,7 +168,7 @@ const supabase = {
   async update(table, id, data) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
     url.searchParams.set("id", `eq.${id}`);
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       method: "PATCH",
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json", Prefer: "return=representation" },
@@ -157,7 +179,7 @@ const supabase = {
   },
   async insert(table, data) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json", Prefer: "return=representation" },
@@ -169,7 +191,7 @@ const supabase = {
   async delete(table, id) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
     url.searchParams.set("id", `eq.${id}`);
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       method: "DELETE",
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
@@ -178,7 +200,7 @@ const supabase = {
   // Storage helpers
   async uploadFile(bucket, path, file) {
     const url = `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`;
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": file.type, "x-upsert": "true" },
