@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>RJ Pets</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>ð¾</text></svg>"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
@@ -85,19 +85,53 @@ const supabase = {
     const count = cr.split("/")[1];
     return { data: await res.json(), count: count && count !== "*" ? parseInt(count) : null };
   },
-  async getAll(table, { order = "id", search, pageSize = 1000, filters } = {}) {
-    const first = await this._fetchPage(table, { order, from: 0, to: pageSize - 1, search, filters });
-    const total = first.count ?? first.data.length;
-    let data = first.data;
-    if (total > pageSize) {
-      const pages = [];
-      for (let from = pageSize; from < total; from += pageSize) {
-        pages.push(this._fetchPage(table, { order, from, to: from + pageSize - 1, search, filters }));
-      }
-      const rest = await Promise.all(pages);
-      data = data.concat(...rest.map(r => r.data));
-    }
-    return { data, count: total };
+  async getCount(table, { search } = {}) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    url.searchParams.set("select", "id");
+    url.searchParams.set("order", "id.asc");
+    if (search) url.searchParams.set("or",
+      `(owner_name.ilike.%${search}%,phone_primary.ilike.%${search}%,phone_secondary.ilike.%${search}%,email.ilike.%${search}%,address.ilike.%${search}%)`);
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Prefer: "count=exact", Range: "0-0", "Range-Unit": "items" },
+    });
+    if (!res.ok && res.status !== 206 && res.status !== 416) throw new Error(await res.text());
+    const cr = res.headers.get("content-range") || "";
+    const count = cr.split("/")[1];
+    return count && count !== "*" ? parseInt(count) : 0;
+  },
+  async getOne(table, { offset = 0 } = {}) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    url.searchParams.set("order", "id.asc");
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Prefer: "count=exact", Range: `${offset}-${offset}`, "Range-Unit": "items" },
+    });
+    if (!res.ok && res.status !== 206) throw new Error(await res.text());
+    const data = await res.json();
+    return data[0] || null;
+  },
+  async getById(table, id) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    url.searchParams.set("id", `eq.${id}`);
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return data[0] || null;
+  },
+  async getSearchIds(search) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/clients`);
+    url.searchParams.set("select", "id");
+    url.searchParams.set("order", "id.asc");
+    url.searchParams.set("or",
+      `(owner_name.ilike.%${search}%,phone_primary.ilike.%${search}%,phone_secondary.ilike.%${search}%,email.ilike.%${search}%,address.ilike.%${search}%)`);
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return (await res.json()).map(r => r.id);
   },
   async getByFilter(table, filters, order = "id") {
     const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
@@ -623,7 +657,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                       <span><span style={{fontSize:11,color:"#888"}}>Blanket: </span>{pet.blanket||"No"}</span>
                     </div>
 
-                    {/* FEEDING CHART — shows foods per slot */}
+                    {/* FEEDING CHART â shows foods per slot */}
                     <div style={{marginTop:6,border:"1.5px solid #bbb",borderRadius:4,overflow:"hidden"}}>
                       <div style={{fontSize:11,fontWeight:700,color:"#333",textAlign:"center",padding:"4px 0",background:"#e8e8e8",borderBottom:"1.5px solid #bbb"}}>Feeding</div>
                       <div style={{display:"flex"}}>
@@ -644,7 +678,7 @@ function CageCard({ client, pet, allPets, onClose }) {
                       </div>
                     </div>
 
-                    {/* MEDS CHART — AM/Noon/PM per day */}
+                    {/* MEDS CHART â AM/Noon/PM per day */}
                     {hasMeds && (() => {
                       const allMedCols = [];
                       for (let i = 0; i <= totalDays; i++) { allMedCols.push(i); }
@@ -716,7 +750,7 @@ function CageCard({ client, pet, allPets, onClose }) {
 
 // Main App
 function RJPetsApp() {
-  const [records, setRecords] = useState([]);
+  const [record, setRecord] = useState(null);
   const [idx, setIdx] = useState(0);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
@@ -724,6 +758,7 @@ function RJPetsApp() {
   const [toast, setToast] = useState(null);
   const [connected, setConnected] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [searchIds, setSearchIds] = useState(null);
 
   // Pets state
   const [pets, setPets] = useState([]);
@@ -731,7 +766,7 @@ function RJPetsApp() {
   const [showCageCard, setShowCageCard] = useState(false);
   const [confirmDeletePet, setConfirmDeletePet] = useState(false);
 
-  const r = records[idx] || null;
+  const r = record;
   const currentPet = pets[petIdx] || null;
 
   const showToast = (msg, type="success") => {
@@ -767,7 +802,7 @@ function RJPetsApp() {
       updated.total = Math.round(subtotal);
       updated.balance = Math.round(updated.total - (updated.down_payment||0) - (updated.cash_discount||0));
     }
-    setRecords(p => p.map(x => x.id === id ? updated : x));
+    setRecord(updated);
     try {
       const {id: _id, created_at, updated_at, ...rest} = updated;
       await supabase.update("clients", id, rest);
@@ -787,13 +822,27 @@ function RJPetsApp() {
     } catch(e) { showToast("Save failed: "+e.message, "error"); }
   };
 
-  // Fetch clients
+  // Fetch single record at index
+  const fetchRecordAt = useCallback(async (index, ids) => {
+    try {
+      let rec;
+      if (ids) {
+        if (index < 0 || index >= ids.length) { setRecord(null); return; }
+        rec = await supabase.getById("clients", ids[index]);
+      } else {
+        rec = await supabase.getOne("clients", { offset: index });
+      }
+      setRecord(rec);
+      setConnected(true);
+    } catch { setRecord(null); setConnected(false); }
+  }, []);
+
+  // Fetch clients (count + first record, or search)
   const fetchRecords = useCallback(async (search="") => {
     setLoading(true);
     try {
-      const {data,count} = await supabase.getAll("clients",{search:search||undefined});
-      let allData = data;
       if (search) {
+        let ids = await supabase.getSearchIds(search);
         try {
           const petUrl = new URL(`${SUPABASE_URL}/rest/v1/pets`);
           petUrl.searchParams.set("select", "client_id");
@@ -803,18 +852,31 @@ function RJPetsApp() {
           });
           if (petRes.ok) {
             const petMatches = await petRes.json();
-            const existingIds = new Set(allData.map(c => c.id));
-            const newIds = [...new Set(petMatches.map(p => p.client_id))].filter(id => !existingIds.has(id));
-            if (newIds.length > 0) {
-              const {data: extra} = await supabase.getByFilter("clients", { id: `in.(${newIds.join(",")})` });
-              allData = [...allData, ...extra];
-            }
+            const existingSet = new Set(ids);
+            const newIds = [...new Set(petMatches.map(p => p.client_id))].filter(id => !existingSet.has(id));
+            ids = [...ids, ...newIds].sort((a, b) => a - b);
           }
         } catch {}
+        setSearchIds(ids);
+        setTotal(ids.length);
+        setIdx(0);
+        if (ids.length > 0) {
+          const rec = await supabase.getById("clients", ids[0]);
+          setRecord(rec);
+        } else { setRecord(null); }
+      } else {
+        setSearchIds(null);
+        const count = await supabase.getCount("clients");
+        setTotal(count);
+        setIdx(0);
+        if (count > 0) {
+          const rec = await supabase.getOne("clients", { offset: 0 });
+          setRecord(rec);
+        } else { setRecord(null); }
       }
-      setRecords(allData); setTotal(allData.length); setIdx(0); setConnected(true);
+      setConnected(true);
     } catch {
-      setRecords([]); setTotal(0); setIdx(0); setConnected(false);
+      setRecord(null); setTotal(0); setIdx(0); setConnected(false); setSearchIds(null);
     }
     setLoading(false);
   },[]);
@@ -829,12 +891,17 @@ function RJPetsApp() {
 
   useEffect(()=>{fetchRecords()},[fetchRecords]);
   useEffect(()=>{
-    const client = records[idx];
-    if (client) fetchPets(client.id);
+    if (record) fetchPets(record.id);
     else { setPets([]); setPetIdx(0); }
-  },[idx, records, fetchPets]);
+  },[record, fetchPets]);
 
-  const go = (i) => { if(i>=0&&i<records.length) setIdx(i); };
+  const go = async (i) => {
+    if (i < 0 || i >= total) return;
+    setIdx(i);
+    setLoading(true);
+    await fetchRecordAt(i, searchIds);
+    setLoading(false);
+  };
 
   const deletePet = async () => {
     const pet = pets[petIdx];
@@ -850,7 +917,7 @@ function RJPetsApp() {
   };
 
   const addPet = async () => {
-    const client = records[idx];
+    const client = record;
     if (!client) return;
     const blank = {
       client_id: client.id, pet_name: "New Pet", breed: "", date_of_birth: null,
@@ -883,7 +950,8 @@ function RJPetsApp() {
       if (connected) {
         const {data} = await supabase.insert("clients",blank);
         const newClient = data[0];
-        setRecords(p=>[...p,newClient]); setIdx(records.length); setTotal(t=>t+1);
+        setRecord(newClient); setIdx(total); setTotal(t=>t+1);
+        if (searchIds) setSearchIds(ids => [...ids, newClient.id]);
         await supabase.insert("pets", { client_id: newClient.id, pet_name: "New Pet", blanket: "No", foods_am: [], foods_noon: [], foods_pm: [], medications: [] });
       }
     } catch(e) { showToast("Create failed: "+e.message,"error"); }
@@ -891,12 +959,21 @@ function RJPetsApp() {
 
   const deleteRecord = async () => {
     if (!r) return;
+    const deletedId = r.id;
     try {
-      if (connected) await supabase.delete("clients",r.id);
-      const newRecs = records.filter(x=>x.id!==r.id);
-      setRecords(newRecs); setTotal(t=>t-1);
-      setIdx(Math.min(idx,newRecs.length-1));
+      if (connected) await supabase.delete("clients", deletedId);
+      const newTotal = total - 1;
+      const newIds = searchIds ? searchIds.filter(id => id !== deletedId) : null;
+      setTotal(newTotal);
+      if (newIds) setSearchIds(newIds);
       setConfirmDelete(false);
+      if (newTotal > 0) {
+        const newIdx = Math.min(idx, newTotal - 1);
+        setIdx(newIdx);
+        await fetchRecordAt(newIdx, newIds);
+      } else {
+        setIdx(0); setRecord(null);
+      }
       showToast("Record deleted");
     } catch(e) { showToast("Delete failed: "+e.message,"error"); }
   };
@@ -984,10 +1061,10 @@ function RJPetsApp() {
           <button onClick={()=>go(0)} className="px-2 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&#x23EE;</button>
           <button onClick={()=>go(idx-1)} className="px-3 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&larr;</button>
           <span className="text-sm font-mono mx-2 min-w-[80px] text-center" style={{color:"#555"}}>
-            {records.length>0?`${idx+1} of ${records.length}`:"0 of 0"}
+            {total>0?`${idx+1} of ${total}`:"0 of 0"}
           </span>
           <button onClick={()=>go(idx+1)} className="px-3 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&rarr;</button>
-          <button onClick={()=>go(records.length-1)} className="px-2 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&#x23ED;</button>
+          <button onClick={()=>go(total-1)} className="px-2 py-1 rounded text-sm" style={{background:"#ccc",color:"#333",border:"1px solid #aaa"}}>&#x23ED;</button>
           <span className="text-xs ml-2" style={{color:"#777"}}>{total.toLocaleString()} records</span>
         </div>
         <div className="flex items-center gap-2">
@@ -1189,7 +1266,7 @@ function RJPetsApp() {
                   </label>
                 </div>
 
-                {/* Feeding AM/Noon/PM — replicable food boxes */}
+                {/* Feeding AM/Noon/PM â replicable food boxes */}
                 <div style={{display:"flex", gap:6, flexWrap:"wrap", marginBottom:4}}>
                   <FoodMealSlot label="Feeding AM" foods={getFoodsForSlot(currentPet, "am")}
                     onSave={items => savePetField("foods_am", items)} />
@@ -1199,7 +1276,7 @@ function RJPetsApp() {
                     onSave={items => savePetField("foods_pm", items)} />
                 </div>
 
-                {/* Medications — own section */}
+                {/* Medications â own section */}
                 {currentPet.needs_meds && (
                   <MedsSection pet={currentPet}
                     onSaveMeds={meds => savePetField("medications", meds)}
