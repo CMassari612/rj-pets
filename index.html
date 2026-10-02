@@ -256,11 +256,11 @@ const calcDays = (dateIn, dateOut, timeOut) => {
 
 // Auto-discount tiers
 const getAutoDiscount = (days) => {
-  if (!days || days < 14) return null;
+  if (!days || days < 14) return 0;
   if (days >= 45) return 20;
   if (days >= 30) return 15;
   if (days >= 14) return 10;
-  return null;
+  return 0;
 };
 
 // Dropdown options
